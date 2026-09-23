@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Moderation — Movie Bot Admin{% endblock %}
+{% block content %}
+<h1>Moderation Queue</h1>
+
+<div class="card">
+    <h3>Suspicious referral activity</h3>
+    <table>
+        <tr><th>Referrer</th><th>Referred</th><th>Reason</th><th>Attributed at</th></tr>
+        {% for r in suspicious_referrals %}
+        <tr>
+            <td>#{{ r.referrer_user_id }}</td>
+            <td>#{{ r.referred_user_id }}</td>
+            <td>{{ r.suspicious_reason }}</td>
+            <td>{{ r.attributed_at }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+
+<div class="card">
+    <h3>Open support tickets</h3>
+    <table>
+        <tr><th>ID</th><th>User</th><th>Subject</th><th>Status</th><th>Reply</th></tr>
+        {% for t in open_tickets %}
+        <tr>
+            <td>{{ t.id }}</td>
+            <td>#{{ t.user_id }}</td>
+            <td>{{ t.subject }}</td>
+            <td>{{ t.status }}</td>
+            <td>
+                <form method="post" action="/admin/moderation/tickets/{{ t.id }}/reply" style="display:inline">
+                    <input type="text" name="text" placeholder="Reply" style="width:150px">
+                    <button>Send</button>
+                </form>
+                <form method="post" action="/admin/moderation/tickets/{{ t.id }}/close" style="display:inline"><button>Close</button></form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

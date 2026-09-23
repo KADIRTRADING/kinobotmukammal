@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Movie Bot Admin{% endblock %}
+{% block content %}
+<h1>Dashboard</h1>
+
+<div class="card">
+    <h3>Overview</h3>
+    <table>
+        <tr><td>Total users</td><td>{{ stats.total_users }}</td></tr>
+        <tr><td>Active premium users</td><td>{{ stats.premium_users }}</td></tr>
+        <tr><td>Total orders</td><td>{{ stats.total_orders }}</td></tr>
+        <tr><td>Paid orders</td><td>{{ stats.paid_orders }}</td></tr>
+        {% for currency, amount in stats.revenue_by_currency.items() %}
+        <tr><td>Revenue ({{ currency }})</td><td>{{ amount }}</td></tr>
+        {% endfor %}
+    </table>
+</div>
+
+<div class="card">
+    <h3>Payment providers</h3>
+    <table>
+        <tr><th>Provider</th><th>Status</th></tr>
+        {% for p in providers %}
+        <tr>
+            <td>{{ p.label }}</td>
+            <td>
+                {% if not p.enabled %}<span class="badge off">Disabled</span>
+                {% elif p.live %}<span class="badge ok">Live</span>
+                {% else %}<span class="badge warn">Sandbox</span>{% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+
+<div class="card">
+    <h3>Needs attention</h3>
+    <p>Suspicious referrals: {{ moderation.suspicious_referrals }}</p>
+    <p>Pending promo reviews: {{ moderation.pending_promo_links }}</p>
+    <p>Pending blogger applications: {{ moderation.pending_blogger_applications }}</p>
+    <p>Open support tickets: {{ moderation.open_support_tickets }}</p>
+</div>
+{% endblock %}

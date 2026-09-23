@@ -1,0 +1,9 @@
+Single-database configuration for Alembic, using the async app but
+migrating with a SYNCHRONOUS driver (psycopg2) per `DATABASE_URL_SYNC` in
+.env — this avoids needing an async-capable Alembic runner and matches
+Alembic's own documented recommendation for async SQLAlchemy apps.
+
+Run:
+    alembic upgrade head          # apply all migrations
+    alembic revision --autogenerate -m "message"   # after changing models
+    alembic downgrade -1          # roll back one revision

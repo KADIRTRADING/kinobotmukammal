@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Movies — Movie Bot Admin{% endblock %}
+{% block content %}
+<h1>Movies</h1>
+<p style="opacity:0.7">To add a new movie: forward/send the licensed video to the bot from an admin's Telegram
+account. The bot captures the Telegram file_id automatically and creates a draft record here for metadata editing.</p>
+<table>
+    <tr><th>Code</th><th>Title (EN)</th><th>Category</th><th>Access</th><th>State</th><th>Views</th><th>Actions</th></tr>
+    {% for m in movies %}
+    <tr>
+        <td>{{ m.code }}</td>
+        <td>{{ m.title_en }}</td>
+        <td>{{ m.category.title_en if m.category else "—" }}</td>
+        <td>{{ m.access_type }}</td>
+        <td>{{ m.publication_state }}</td>
+        <td>{{ m.view_count }}</td>
+        <td>
+            <form method="post" action="/admin/movies/{{ m.id }}/publish" style="display:inline">
+                <button type="submit">Publish</button>
+            </form>
+            <form method="post" action="/admin/movies/{{ m.id }}/archive" style="display:inline">
+                <button type="submit">Archive</button>
+            </form>
+            <form method="post" action="/admin/movies/{{ m.id }}/delete" style="display:inline"
+                  onsubmit="return confirm('Delete this movie permanently?');">
+                <button type="submit" style="background:#7a2222">Delete</button>
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% endblock %}

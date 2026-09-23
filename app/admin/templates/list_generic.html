@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} — Movie Bot Admin{% endblock %}
+{% block content %}
+<h1>{{ title }}</h1>
+{% if message %}<p class="card">{{ message }}</p>{% endif %}
+{% block body %}{% endblock %}
+{% endblock %}

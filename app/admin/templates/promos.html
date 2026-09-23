@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Promo Codes — Movie Bot Admin{% endblock %}
+{% block content %}
+<h1>Promo Codes</h1>
+
+<div class="card">
+    <h3>Create bot-issued (platform-funded) code</h3>
+    <form method="post" action="/admin/promos/create_admin_code">
+        <select name="plan_id">
+            {% for p in plans %}<option value="{{ p.id }}">{{ p.code }} ({{ p.price_amount }} {{ p.currency }})</option>{% endfor %}
+        </select>
+        <select name="kind">
+            <option value="full_premium">Full Premium</option>
+            <option value="percent_discount">Percent Discount</option>
+        </select>
+        <input type="number" name="discount_percent" placeholder="Discount % (if applicable)" value="0">
+        <input type="number" name="activations" placeholder="Activations" required>
+        <button type="submit">Create</button>
+    </form>
+</div>
+
+<div class="card">
+    <h3>Pending attribution-link review</h3>
+    <table>
+        <tr><th>Code</th><th>Issuer</th><th>Attribution</th><th>Actions</th></tr>
+        {% for promo in pending %}
+        <tr>
+            <td>{{ promo.code }}</td>
+            <td>user #{{ promo.issuer_user_id }}</td>
+            <td>{{ promo.attribution_label or promo.attribution_url }}</td>
+            <td>
+                <form method="post" action="/admin/promos/{{ promo.id }}/approve" style="display:inline"><button>Approve</button></form>
+                <form method="post" action="/admin/promos/{{ promo.id }}/reject" style="display:inline">
+                    <input type="text" name="reason" placeholder="Reason" style="width:100px">
+                    <button style="background:#7a2222">Reject</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Orders — Movie Bot Admin{% endblock %}
+{% block content %}
+<h1>Orders</h1>
+
+<div class="card">
+    <h3>Provider status</h3>
+    <table>
+        <tr><th>Provider</th><th>Status</th></tr>
+        {% for p in providers %}
+        <tr>
+            <td>{{ p.label }}</td>
+            <td>{% if not p.enabled %}<span class="badge off">Disabled</span>{% elif p.live %}<span class="badge ok">Live</span>{% else %}<span class="badge warn">Sandbox</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+
+<table>
+    <tr><th>UID</th><th>Buyer</th><th>Plan</th><th>Amount</th><th>Provider</th><th>Status</th><th>Actions</th></tr>
+    {% for o in orders %}
+    <tr>
+        <td>{{ o.uid }}</td>
+        <td>#{{ o.buyer_user_id }}</td>
+        <td>#{{ o.plan_id }}</td>
+        <td>{{ o.net_amount }} {{ o.currency }}</td>
+        <td>{{ o.provider_code }}</td>
+        <td>{{ o.status }}</td>
+        <td>
+            {% if o.status == "paid" %}
+            <form method="post" action="/admin/orders/{{ o.id }}/refund" style="display:inline">
+                <input type="text" name="reason" placeholder="Reason" style="width:100px" required>
+                <button style="background:#7a2222">Refund</button>
+            </form>
+            {% endif %}
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% endblock %}

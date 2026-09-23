@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Users — Movie Bot Admin{% endblock %}
+{% block content %}
+<h1>Users</h1>
+<form method="get" action="/admin/users">
+    <input type="text" name="q" value="{{ q }}" placeholder="Search by username, name, or Telegram ID">
+    <button type="submit">Search</button>
+</form>
+
+<table>
+    <tr><th>Telegram ID</th><th>Username</th><th>Lang</th><th>Premium until</th><th>Blocked</th><th>Actions</th></tr>
+    {% for u in users %}
+    <tr>
+        <td>{{ u.telegram_id }}</td>
+        <td>{{ u.username or "—" }}</td>
+        <td>{{ u.language }}</td>
+        <td>{{ u.premium_until or "—" }}</td>
+        <td>{{ u.is_blocked }}</td>
+        <td>
+            {% if u.is_blocked %}
+            <form method="post" action="/admin/users/{{ u.id }}/unblock" style="display:inline"><button>Unblock</button></form>
+            {% else %}
+            <form method="post" action="/admin/users/{{ u.id }}/block" style="display:inline">
+                <input type="text" name="reason" placeholder="Reason" style="width:100px">
+                <button>Block</button>
+            </form>
+            {% endif %}
+            <form method="post" action="/admin/users/{{ u.id }}/gift_balance" style="display:inline">
+                <input type="number" name="amount" placeholder="Amount" style="width:70px">
+                <input type="text" name="currency" value="UZS" style="width:50px">
+                <input type="text" name="reason" placeholder="Reason" style="width:90px">
+                <button>Gift balance</button>
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Premium Plans — Movie Bot Admin{% endblock %}
+{% block content %}
+<h1>Premium Plans</h1>
+
+<div class="card">
+    <h3>Create a new plan</h3>
+    <form method="post" action="/admin/plans/create">
+        <input type="text" name="code" placeholder="Code (e.g. monthly)" required>
+        <input type="text" name="title_uz" placeholder="Title (UZ)" required>
+        <input type="text" name="title_ru" placeholder="Title (RU)" required>
+        <input type="text" name="title_en" placeholder="Title (EN)" required>
+        <input type="number" name="duration_days" placeholder="Duration (days)" required>
+        <input type="number" name="price_amount" placeholder="Price (minor units)" required>
+        <input type="text" name="currency" placeholder="Currency" value="UZS">
+        <input type="number" name="standard_referral_percent" placeholder="Standard referral % *100 (e.g. 1000=10%)" value="0">
+        <input type="number" name="blogger_referral_percent" placeholder="Blogger referral % *100" value="0">
+        <label><input type="checkbox" name="blogger_acquisition_reward_enabled" checked> Blogger acquisition reward enabled</label>
+        <input type="number" name="max_discount_percent" placeholder="Max promo discount %" value="100">
+        <button type="submit">Create</button>
+    </form>
+</div>
+
+<table>
+    <tr>
+        <th>Code</th><th>Price</th><th>Duration</th><th>Std referral %</th><th>Blogger referral %</th>
+        <th>Blogger acq. reward</th><th>Active</th><th>Update</th>
+    </tr>
+    {% for p in plans %}
+    <tr>
+        <td>{{ p.code }}</td>
+        <td>{{ p.price_amount }} {{ p.currency }}</td>
+        <td>{{ p.duration_days }}d</td>
+        <td>{{ (p.standard_referral_percent / 100) }}%</td>
+        <td>{{ (p.blogger_referral_percent / 100) }}%</td>
+        <td>{{ p.blogger_acquisition_reward_enabled }}</td>
+        <td>{{ p.is_active }}</td>
+        <td>
+            <form method="post" action="/admin/plans/{{ p.id }}/update">
+                <input type="number" name="price_amount" value="{{ p.price_amount }}" style="width:90px">
+                <input type="number" name="standard_referral_percent" value="{{ p.standard_referral_percent }}" style="width:70px">
+                <input type="number" name="blogger_referral_percent" value="{{ p.blogger_referral_percent }}" style="width:70px">
+                <label><input type="checkbox" name="blogger_acquisition_reward_enabled" {% if p.blogger_acquisition_reward_enabled %}checked{% endif %}></label>
+                <label><input type="checkbox" name="is_active" {% if p.is_active %}checked{% endif %}></label>
+                <button type="submit">Save</button>
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+<p style="opacity:0.7">Note: updating a plan only affects FUTURE orders. Past orders and referral commissions keep
+their own frozen snapshot of the price/percent that applied at purchase time.</p>
+{% endblock %}

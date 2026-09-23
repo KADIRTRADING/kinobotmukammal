@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Bloggers — Movie Bot Admin{% endblock %}
+{% block content %}
+<h1>Bloggers</h1>
+
+<div class="card">
+    <h3>Global acquisition reward rate</h3>
+    <form method="post" action="/admin/bloggers/settings/reward_rate">
+        <input type="number" name="rate" value="{{ global_rate }}" placeholder="Amount per 1000 qualified joins">
+        <input type="text" name="currency" value="{{ global_currency }}" style="width:60px">
+        <button type="submit">Save</button>
+    </form>
+    <p style="opacity:0.7">Accrual starts with the FIRST qualified join; fractional remainders are carried forward, never lost.</p>
+</div>
+
+<div class="card">
+    <h3>Pending applications</h3>
+    <table>
+        <tr><th>Applicant</th><th>Platform</th><th>URL</th><th>Phrase</th><th>Actions</th></tr>
+        {% for app in pending_applications %}
+        <tr>
+            <td>user #{{ app.applicant_user_id }}</td>
+            <td>{{ app.platform_name }}</td>
+            <td>{{ app.submitted_url }}</td>
+            <td>{{ app.verification_phrase }}</td>
+            <td>
+                <form method="post" action="/admin/bloggers/applications/{{ app.id }}/approve" style="display:inline"><button>Approve</button></form>
+                <form method="post" action="/admin/bloggers/applications/{{ app.id }}/reject" style="display:inline">
+                    <input type="text" name="reason" placeholder="Reason" style="width:100px">
+                    <button style="background:#7a2222">Reject</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+
+<div class="card">
+    <h3>Blogger profiles</h3>
+    <table>
+        <tr><th>User</th><th>Status</th><th>Qualified joins</th><th>Actions</th></tr>
+        {% for p in profiles %}
+        <tr>
+            <td>user #{{ p.user_id }}</td>
+            <td>{{ p.status }}</td>
+            <td>{{ p.qualified_joins_counted }}</td>
+            <td>
+                {% if p.status == "active" %}
+                <form method="post" action="/admin/bloggers/{{ p.user_id }}/suspend" style="display:inline">
+                    <input type="text" name="reason" placeholder="Reason" style="width:100px">
+                    <button style="background:#7a2222">Suspend</button>
+                </form>
+                {% else %}
+                <form method="post" action="/admin/bloggers/{{ p.user_id }}/reactivate" style="display:inline"><button>Reactivate</button></form>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

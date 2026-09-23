@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Login — Movie Bot</title>
+    <style>
+        body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; background: #0f1115; color: #e6e6e6;
+               display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        form { background: #161922; padding: 32px; border-radius: 10px; width: 320px; }
+        input { width: 100%; padding: 10px; margin-bottom: 12px; border-radius: 6px; border: 1px solid #2a2e3a; background: #10131a; color: #e6e6e6; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; border-radius: 6px; background: #2c5fce; color: white; border: none; cursor: pointer; }
+        .error { color: #ff6b6b; margin-bottom: 12px; }
+        h1 { font-size: 18px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+<form method="post" action="/admin/login">
+    <h1>🎬 Movie Bot Admin</h1>
+    {% if error %}<div class="error">{{ error }}</div>{% endif %}
+    <input type="text" name="username" placeholder="Username" required autofocus>
+    <input type="password" name="password" placeholder="Password" required>
+    <button type="submit">Sign in</button>
+</form>
+</body>
+</html>

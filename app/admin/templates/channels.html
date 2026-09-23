@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Mandatory Channels — Movie Bot Admin{% endblock %}
+{% block content %}
+<h1>Mandatory Subscription Channels</h1>
+{% if diagnostic_error %}<p class="error">Diagnostic error: {{ diagnostic_error }}</p>{% endif %}
+
+<div class="card">
+    <h3>Add channel</h3>
+    <form method="post" action="/admin/channels/create">
+        <input type="text" name="chat_id" placeholder="@channel_username or -100123456789" required>
+        <input type="text" name="title" placeholder="Display title" required>
+        <input type="text" name="invite_link" placeholder="Invite link (optional)">
+        <button type="submit">Add</button>
+    </form>
+</div>
+
+<table>
+    <tr><th>Chat ID</th><th>Title</th><th>Bot is admin?</th><th>Active</th><th>Actions</th></tr>
+    {% for c in channels %}
+    <tr>
+        <td>{{ c.chat_id }}</td>
+        <td>{{ c.title }}</td>
+        <td>{% if c.bot_is_admin_verified %}<span class="badge ok">Yes</span>{% else %}<span class="badge warn">Unverified</span>{% endif %}</td>
+        <td>{{ c.is_active }}</td>
+        <td>
+            <form method="post" action="/admin/channels/{{ c.id }}/diagnose" style="display:inline">
+                <button type="submit">Check bot admin rights</button>
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% endblock %}
