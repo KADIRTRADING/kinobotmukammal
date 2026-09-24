@@ -145,3 +145,18 @@ class AdminBroadcastStates(StatesGroup):
 
 class AdminOrderStates(StatesGroup):
     awaiting_refund_reason = State()
+
+
+class AdminAdminsStates(StatesGroup):
+    """FSM states for the "👑 Admins" section (grant/revoke runtime admin
+    access). Every handler using these states is additionally gated to
+    owners-only via `app.core.admin_access.is_owner_admin` inside the
+    handler body -- see `app.bot.handlers.admin.admins` -- on top of the
+    router-level `AdminAccessFilter` that already covers the whole admin
+    subtree, so a granted (non-owner) admin can never reach these steps
+    even though they pass the outer filter for every OTHER admin section.
+    """
+
+    awaiting_grant_telegram_id = State()
+    awaiting_grant_label = State()
+    awaiting_revoke_confirm_id = State()

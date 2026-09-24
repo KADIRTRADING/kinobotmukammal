@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.db.repositories.admin_grant_repo import AdminGrantRepository
 from app.db.repositories.admin_repo import AdminRepository, AuditLogRepository
 from app.db.repositories.blogger_repo import BloggerRepository
 from app.db.repositories.broadcast_repo import BroadcastRepository
@@ -39,6 +40,7 @@ class UnitOfWork:
         self.broadcasts = BroadcastRepository(session)
         self.support = SupportRepository(session)
         self.admins = AdminRepository(session)
+        self.admin_grants = AdminGrantRepository(session)
         self.audit = AuditLogRepository(session)
         self.settings = SettingsRepository(session)
 

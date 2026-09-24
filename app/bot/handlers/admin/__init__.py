@@ -7,6 +7,7 @@ chat, with a non-forwarded message -- that invariant is enforced once,
 here, rather than repeated in every individual handler.
 
 Sub-modules (one per admin panel section, matching the spec):
+    admins.py       -- grant/revoke runtime admin access (owners only)
     dashboard.py    -- statistics overview
     movies.py       -- movie CRUD (upload/draft/preview/publish/edit/archive/delete/search)
     categories.py   -- category CRUD + reordering
@@ -28,6 +29,7 @@ from aiogram import Dispatcher, Router
 
 from app.bot.filters.admin_filter import AdminAccessFilter
 from app.bot.handlers.admin import (
+    admins,
     bloggers,
     broadcasts,
     categories,
@@ -72,6 +74,7 @@ def build_admin_router() -> Router:
     admin_router.include_router(broadcasts.router)
     admin_router.include_router(orders.router)
     admin_router.include_router(settings_module.router)
+    admin_router.include_router(admins.router)
 
     return admin_router
 

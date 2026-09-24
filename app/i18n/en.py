@@ -486,4 +486,31 @@ TRANSLATIONS: dict[str, str] = {
     "admin_audit_menu_title": "📜 Recent admin actions:",
     "admin_audit_empty": "Action history is empty.",
     "admin_audit_entry_line": "{date} | {admin} | {action} | {entity}",
+    # --- Admins (runtime admin grant/revoke) --------------------------------------
+    "admin_admins_button": "👑 Admins",
+    "admin_admins_menu_title": "👑 Manage admins:",
+    "admin_admins_list_button": "📋 List admins",
+    "admin_admins_add_button": "➕ Add admin",
+    "admin_admins_owners_header": "👑 Owner admins (via .env):",
+    "admin_admins_granted_header": "➕ Granted admins:",
+    "admin_admins_none": "  (none)",
+    "admin_admins_owner_line": "  🆔 {telegram_id}",
+    "admin_admins_granted_line": "  🆔 {telegram_id} — {label} (granted by: {granted_by})",
+    "admin_admins_revoke_row": "🗑 {label}",
+    "admin_admins_owners_only": "⛔ Only owner admins can do this.",
+    "admin_admins_enter_telegram_id_prompt": "Enter the new admin's numeric Telegram ID:",
+    "admin_admins_enter_label_prompt": (
+        "Enter a short note about this admin (e.g. a name or @username), " 'or send "-" to skip:'
+    ),
+    "admin_admins_cannot_self_grant": "⛔ You cannot grant admin access to yourself.",
+    "admin_admins_already_owner": "This user is already an owner admin (via .env).",
+    "admin_admins_already_granted": "This user already has admin access.",
+    "admin_admins_grant_confirm_prompt": (
+        "Confirm: grant admin access to 🆔 {telegram_id} ({label})?"
+    ),
+    "admin_admins_granted": "✅ Admin access granted to 🆔 {telegram_id}.",
+    "admin_admins_revoke_confirm_prompt": "Confirm revoking admin access for 🆔 {telegram_id}?",
+    "admin_admins_revoked": "🗑 Admin access revoked for 🆔 {telegram_id}.",
+    "admin_admins_you_were_granted": "✅ You've been granted access to the admin panel. Press /start.",
+    "admin_admins_you_were_revoked": "⛔ Your admin panel access has been revoked.",
 }

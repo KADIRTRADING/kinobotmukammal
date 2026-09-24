@@ -57,7 +57,7 @@ async def handle_start(message: Message, command: CommandObject, uow: UnitOfWork
 
     await message.answer(
         t(user.language, "main_menu_title"),
-        reply_markup=main_menu_keyboard_for_telegram_id(user.language, user.telegram_id),
+        reply_markup=await main_menu_keyboard_for_telegram_id(user.language, user.telegram_id, uow),
     )
 
 
@@ -77,6 +77,6 @@ async def handle_language_choice(callback: CallbackQuery, uow: UnitOfWork, **kwa
     await callback.message.edit_text(t(language, "language_set"))
     await callback.message.answer(
         t(language, "main_menu_title"),
-        reply_markup=main_menu_keyboard_for_telegram_id(language, user.telegram_id),
+        reply_markup=await main_menu_keyboard_for_telegram_id(language, user.telegram_id, uow),
     )
     await callback.answer()

@@ -65,6 +65,7 @@ def admin_menu_root_keyboard(language: str) -> InlineKeyboardMarkup:
             )
         ],
         [InlineKeyboardButton(text=t(language, "admin_audit_button"), callback_data="adm:audit")],
+        [InlineKeyboardButton(text=t(language, "admin_admins_button"), callback_data="adm:admins")],
         [
             InlineKeyboardButton(
                 text=t(language, "admin_main_menu_button"), callback_data="adm:exit"

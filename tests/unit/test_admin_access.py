@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from app.core.admin_access import (
     AdminAccessContext,
     is_authorized_admin,
+    is_owner_admin,
     is_superadmin_id,
 )
 
@@ -137,3 +138,74 @@ def test_is_superadmin_id_helper_matches_full_check_for_private_direct_messages(
     assert is_superadmin_id(1234, settings) is True
     assert is_superadmin_id(9999, settings) is False
     assert is_superadmin_id(None, settings) is False
+
+
+# --- Tier-2 "granted admin" tests (runtime admin_grants, see app.core.admin_access
+# module docstring for the two-tier owner/granted model) ------------------------
+
+
+def test_granted_admin_id_in_private_chat_is_authorized_even_though_not_an_owner():
+    ctx = AdminAccessContext(telegram_user_id=5555, chat_type="private", is_forwarded=False)
+    decision = is_authorized_admin(ctx, _settings("1234"), granted_admin_ids=frozenset({5555}))
+    assert decision.allowed is True
+    assert decision.reason == "authorized"
+
+
+def test_granted_admin_id_still_rejected_in_group_chat():
+    ctx = AdminAccessContext(telegram_user_id=5555, chat_type="group", is_forwarded=False)
+    decision = is_authorized_admin(ctx, _settings("1234"), granted_admin_ids=frozenset({5555}))
+    assert decision.allowed is False
+    assert decision.reason == "not_private_chat"
+
+
+def test_granted_admin_id_still_rejected_when_forwarded():
+    ctx = AdminAccessContext(telegram_user_id=5555, chat_type="private", is_forwarded=True)
+    decision = is_authorized_admin(ctx, _settings("1234"), granted_admin_ids=frozenset({5555}))
+    assert decision.allowed is False
+    assert decision.reason == "forwarded_message_rejected"
+
+
+def test_id_not_in_either_owner_or_granted_set_is_rejected():
+    ctx = AdminAccessContext(telegram_user_id=9999, chat_type="private", is_forwarded=False)
+    decision = is_authorized_admin(ctx, _settings("1234"), granted_admin_ids=frozenset({5555}))
+    assert decision.allowed is False
+    assert decision.reason == "not_in_allowlist"
+
+
+def test_default_empty_granted_set_behaves_identically_to_pre_grant_feature_behavior():
+    """Backward-compat guard: any caller that doesn't pass `granted_admin_ids`
+    (e.g. old test code, or a caller yet to be updated) must see the exact
+    same behavior as before this tier was introduced."""
+    ctx = AdminAccessContext(telegram_user_id=1234, chat_type="private", is_forwarded=False)
+    decision = is_authorized_admin(ctx, _settings("1234"))
+    assert decision.allowed is True
+
+
+def test_is_superadmin_id_helper_also_recognizes_granted_admins():
+    settings = _settings("1234")
+    assert is_superadmin_id(5555, settings, granted_admin_ids=frozenset({5555})) is True
+    assert is_superadmin_id(5555, settings) is False  # not granted without the set
+    assert is_superadmin_id(1234, settings, granted_admin_ids=frozenset()) is True  # owner
+
+
+def test_is_owner_admin_is_true_only_for_env_listed_ids_never_for_granted_admins():
+    settings = _settings("1234")
+    assert is_owner_admin(1234, settings) is True
+    assert is_owner_admin(5555, settings) is False  # granted-admin id, not an owner
+    assert is_owner_admin(None, settings) is False
+
+
+def test_granted_admin_cannot_be_mistaken_for_owner_even_if_ids_look_similar():
+    """Documents that owner-only actions (grant/revoke) must gate on
+    `is_owner_admin`, never on `is_authorized_admin`/`is_superadmin_id` --
+    a granted admin passes both of the latter but must fail the former."""
+    settings = _settings("1234")
+    granted = frozenset({5555})
+    assert (
+        is_authorized_admin(
+            AdminAccessContext(telegram_user_id=5555, chat_type="private"), settings, granted
+        ).allowed
+        is True
+    )
+    assert is_superadmin_id(5555, settings, granted) is True
+    assert is_owner_admin(5555, settings) is False

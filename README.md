@@ -151,7 +151,16 @@ docker compose up -d --force-recreate api bot worker
 Only `api`, `bot`, and `worker` need to be recreated — `db`, `redis`, and `migrate`
 (a one-shot job) do not need to be re-run unless the schema or infrastructure config
 changed. If a new Alembic migration was added, run `docker compose run --rm migrate`
-again before recreating `api`/`bot`/`worker`.
+again before recreating `api`/`bot`/`worker`. **As of the "👑 Admins" runtime
+admin-management feature, there IS a new migration** (`0002_admin_grants`, adds the
+`admin_grants` table) — always run `docker compose run --rm migrate` when pulling
+that change, in addition to rebuilding:
+
+```bash
+docker compose build
+docker compose run --rm migrate
+docker compose up -d --force-recreate api bot worker
+```
 
 - Bot: long-polls Telegram by default (leave `BOT_WEBHOOK_URL` empty in `.env`).
 - Admin panel: just message the bot on Telegram from an ID listed in
@@ -265,7 +274,7 @@ See `.env.example` for the full, commented list. Highlights:
 | `PAYMENTS_STRIPE_ENABLED` / `STRIPE_*` | Independent web storefront only; requires `STOREFRONT_ENABLED=true` too. |
 | `PAYMENTS_CLICK_ENABLED` / `CLICK_*` | Same, for Click.uz. |
 | `STOREFRONT_ENABLED` | Master switch for the separate web storefront surface. |
-| `TELEGRAM_SUPERADMIN_IDS` | **Comma-separated numeric Telegram user IDs** (e.g. `123456789,987654321`) that are allowed to see and use the in-Telegram admin panel. This is the *entire* identity source for Telegram-native admin access — no DB row, no username/password. Malformed entries are silently skipped rather than crashing the whole allowlist; in production, at least one valid ID is required (`Settings.validate_for_production` will refuse to start otherwise). |
+| `TELEGRAM_SUPERADMIN_IDS` | **Comma-separated numeric Telegram user IDs** (e.g. `123456789,987654321`) that are "owner" admins — see [How access works](#how-access-works-two-tiers-owners-and-granted-admins). This is the *only* identity source for tier-1 admin access — no DB row, no username/password. Malformed entries are silently skipped rather than crashing the whole allowlist; in production, at least one valid ID is required (`Settings.validate_for_production` will refuse to start otherwise). Additional ("tier-2 granted") admins can be added at runtime from inside the bot itself — see the same section — without ever touching this variable. |
 | `WEB_ADMIN_ENABLED` | `false` by default. Set to `true` only if you also want the legacy browser-based `/admin/*` panel mounted (requires running `scripts/create_superadmin.py` once to create a login). Telegram/Stripe/Click webhooks and the storefront are **never** gated by this flag — only the browser admin UI is. |
 
 ---
@@ -277,22 +286,52 @@ The web admin panel described in earlier revisions of this project has been
 inside Telegram — no browser, no separate login, no `scripts/create_superadmin.py`
 step required to activate it.
 
-### How access works
+### How access works: two tiers, "owners" and "granted admins"
+
+There are two ways to become an in-Telegram admin. Neither one is a username/password
+— both are nothing more than a numeric Telegram user ID.
+
+**Tier 1 — Owner** (set once, via `.env`, requires a restart):
 
 1. Add your numeric Telegram user ID to `TELEGRAM_SUPERADMIN_IDS` in `.env`
-   (comma-separated for multiple admins, e.g. `TELEGRAM_SUPERADMIN_IDS=111111111,222222222`).
-2. Restart the `bot` service.
+   (comma-separated for multiple owners, e.g. `TELEGRAM_SUPERADMIN_IDS=111111111,222222222`).
+   Don't know your numeric ID? Message **@userinfobot** on Telegram — it replies with
+   your ID instantly.
+2. Restart the `bot` service (`docker compose up -d --force-recreate bot`, or restart
+   the process if running without Docker).
 3. Send `/start` to the bot from that Telegram account. A **"🛠 Admin panel"** button
    appears in the main menu — only for allow-listed IDs. Ordinary users never see it.
-4. Tap the button to open the interactive admin menu (all buttons, no typing required
-   except where a value must be entered, e.g. a movie code or a ban reason).
 
-There is **no** DB-backed `Admin` account, username, or password involved in this
-flow. Every admin action is authorized **server-side, on every single message and
+**Tier 2 — Granted admin** (set at runtime, from inside the bot, NO `.env` edit and
+NO restart — this is the feature to use for adding a second/third admin day-to-day):
+
+1. As an **owner**, open 🛠 Admin panel → **👑 Admins → ➕ Add admin**.
+2. Enter the new admin's numeric Telegram ID (again, they can get it from
+   @userinfobot) and an optional label (e.g. their name or `@username`) so you can
+   recognize them later in the admin list.
+3. Confirm. The new admin's access is live **immediately** — no restart, no `.env`
+   change. If they've already started the bot, they get a one-line notification; the
+   next time they send `/start` (or already have the bot open) they'll see the
+   "🛠 Admin panel" button too.
+4. To remove a granted admin: 🛠 Admin panel → 👑 Admins → 📋 List admins → tap their
+   entry → confirm. This is instant as well.
+
+Owners are the **only** identity that can grant or revoke tier-2 access — a granted
+admin has full access to every other admin-panel section but can never add or remove
+another admin (including revoking their own access), which prevents a single
+compromised or careless granted-admin account from entrenching itself or spawning
+more admins. This is enforced by `app.core.admin_access.is_owner_admin`, checked
+inside every mutating handler in `app/bot/handlers/admin/admins.py` — see the
+**Admins** row in the [Admin panel sections](#admin-panel-sections) table below.
+
+There is **no** DB-backed `Admin` account, username, or password involved in either
+tier. Every admin action is authorized **server-side, on every single message and
 button press** — never inferred from a button being visible, never trusted from a
 client-supplied ID. The check (`app/core/admin_access.py::is_authorized_admin`)
 rejects a request if:
-- the Telegram user ID is missing, or not in `TELEGRAM_SUPERADMIN_IDS`;
+- the Telegram user ID is missing, or not an owner (env) and not an active granted
+  admin (DB `admin_grants` table, checked fresh on every message/callback — see
+  `app/bot/filters/admin_filter.py::AdminAccessFilter`);
 - the chat is not a private 1:1 chat with the bot (i.e. a group/channel is always
   rejected, even if the sender's ID is allow-listed);
 - the message was forwarded from elsewhere (checked via `forward_origin` on Bot API
@@ -302,7 +341,7 @@ rejects a request if:
 
 This logic is applied as a single aiogram `Router`-level filter
 (`app/bot/filters/admin_filter.py::AdminAccessFilter`) attached to the parent admin
-router **before** any of its 12 sub-routers are included, so it gates the entire
+router **before** any of its sub-routers are included, so it gates the entire
 admin subtree — the "🛠 Admin panel" button being shown is a UI convenience only,
 never the actual security boundary.
 
@@ -311,6 +350,7 @@ never the actual security boundary.
 | Section | What it does | Key files |
 |---|---|---|
 | Dashboard | Total/active/premium users, movie/view counts, orders, revenue by currency, pending-review count, recent errors (real signal: failed orders + provider-event errors in the last 24h, never fabricated). | `app/bot/handlers/admin/dashboard.py`, `app/services/statistics_service.py` |
+| **Admins** (tier-2 management) | Read-only "list admins" is visible to any authorized admin (owner or granted); grant/revoke actions are owner-only: grant a new admin by numeric Telegram ID + optional label, revoke an existing grant — both with confirmation and an audit-log entry. See "How access works" above. | `app/bot/handlers/admin/admins.py`, `app/services/admin_management_service.py`, `app/db/models/admin_grant.py` |
 | Movies | Upload (video → code → titles/descriptions per language → category → access type → poster), preview, publish, archive, edit any field, replace video/poster, delete (**two-step confirmation**), search by code across every state including drafts. | `app/bot/handlers/admin/movies.py` |
 | Categories | Create, edit, reorder (up/down), enable/disable. | `app/bot/handlers/admin/categories.py` |
 | Mandatory channels | Add, **live** bot-admin-rights verification (`bot.get_chat_member`, never faked), enable/disable, remove. | `app/bot/handlers/admin/channels.py` |
@@ -649,3 +689,44 @@ network access to install `aiogram`/`fastapi`/`sqlalchemy`/etc., so none of it c
 but requires a real environment (§9.2) — run it yourself with `pip install -e ".[dev]"`
 before trusting this in production, and walk through §9.4's manual checklist against a
 real bot token with a real `TELEGRAM_SUPERADMIN_IDS` value.
+
+### 11.1 Follow-up: runtime-manageable admins ("👑 Admins" section)
+
+A second round of work added the ability for an owner to grant/revoke admin-panel
+access to OTHER Telegram accounts **from inside the bot itself**, at runtime, with no
+`.env` edit and no restart — see [How access works](#how-access-works-two-tiers-owners-and-granted-admins).
+
+**New files:** `app/db/models/admin_grant.py` (`AdminGrant` model),
+`alembic/versions/0002_admin_grants.py` (migration adding the `admin_grants` table),
+`app/db/repositories/admin_grant_repo.py`, `app/services/admin_management_service.py`,
+`app/bot/keyboards/admin_admins.py`, `app/bot/handlers/admin/admins.py`,
+`tests/integration/test_admin_grants.py`.
+
+**Modified files:** `app/core/admin_access.py` (`is_authorized_admin`/`is_superadmin_id`
+now accept an optional `granted_admin_ids` set; new `is_owner_admin` helper that is
+`True` only for env-listed owners, used to gate every grant/revoke action),
+`app/bot/filters/admin_filter.py` (reads the live `admin_grants` table via `uow` on
+every check), `app/bot/keyboards/common.py` (`main_menu_keyboard_for_telegram_id` is
+now `async` and takes `uow`, so it can check DB grants — updated at all 6 call sites
+in `start.py`/`premium.py`/`admin/root.py`), `app/bot/keyboards/admin_common.py`
+(new "👑 Admins" row in the root menu), `app/db/uow.py` (registers
+`admin_grants` repository), `app/db/models/__init__.py`, `app/bot/states.py` (new
+`AdminAdminsStates` group), `app/i18n/{uz,ru,en}.py` (+22 `admin_admins_*` keys,
+415 total per language, exact parity re-verified), `tests/unit/test_admin_access.py`
+(+9 tests for the owner/granted-admin distinction), `tests/unit/test_i18n_parity.py`.
+
+**Security invariant**: a granted (tier-2) admin passes the exact same
+`is_authorized_admin` check as an owner for every OTHER admin-panel section, but
+every mutating handler in `admins.py` additionally re-checks `is_owner_admin` and
+silently denies (with an audit-log entry) any attempt by a non-owner to reach it —
+this is what stops a compromised granted-admin account from adding more admins or
+revoking the owner.
+
+**Test results (this sandbox)**: `pytest tests/unit` → **66 passed, 1 skipped** (up
+from 58/1); `ruff check` / `black --check` clean; `mypy` run against every new/changed
+file for this feature — **zero errors** in any of them (the only mypy errors anywhere
+in the tree are pre-existing ones in files this feature didn't touch, plus one
+known/expected `alembic.op` stub-resolution limitation present in both migration
+files equally, since `alembic` isn't installed in this sandbox). All 192 `.py` files
+under `app/`, `tests/`, and `alembic/` parse via `ast.parse`. `tests/integration/test_admin_grants.py`
+requires a real environment to execute, same caveat as §9.2.

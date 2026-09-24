@@ -9,6 +9,7 @@ from aiogram.types import (
 
 from app.config import get_settings
 from app.core.admin_access import is_superadmin_id
+from app.db.uow import UnitOfWork
 from app.i18n import t
 
 
@@ -58,17 +59,25 @@ def main_menu_keyboard(language: str, *, is_admin: bool = False) -> ReplyKeyboar
     return ReplyKeyboardMarkup(keyboard=rows, resize_keyboard=True)
 
 
-def main_menu_keyboard_for_telegram_id(
-    language: str, telegram_id: int | None
+async def main_menu_keyboard_for_telegram_id(
+    language: str, telegram_id: int | None, uow: UnitOfWork
 ) -> ReplyKeyboardMarkup:
     """Convenience wrapper used by every handler that renders the main
-    menu: resolves `is_admin` from the live settings allowlist so callers
-    never have to import `app.core.admin_access` themselves. This is the
-    preferred entrypoint over calling `main_menu_keyboard` directly with a
-    hand-computed `is_admin` value.
+    menu: resolves `is_admin` from the live env allowlist AND the
+    runtime-grantable `admin_grants` table, so callers never have to
+    import `app.core.admin_access` (or query grants) themselves. This is
+    the preferred entrypoint over calling `main_menu_keyboard` directly
+    with a hand-computed `is_admin` value.
+
+    Requires `uow` (every handler already has one injected by
+    `DbSessionMiddleware`) because checking whether `telegram_id` is a
+    runtime-granted admin means reading the `admin_grants` table -- unlike
+    the env allowlist, that can't be resolved from settings alone.
     """
     settings = get_settings()
-    return main_menu_keyboard(language, is_admin=is_superadmin_id(telegram_id, settings))
+    granted_admin_ids = await uow.admin_grants.list_active_telegram_ids()
+    is_admin = is_superadmin_id(telegram_id, settings, granted_admin_ids)
+    return main_menu_keyboard(language, is_admin=is_admin)
 
 
 def cancel_keyboard(language: str) -> ReplyKeyboardMarkup:

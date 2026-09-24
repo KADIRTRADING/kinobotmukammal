@@ -486,4 +486,32 @@ TRANSLATIONS: dict[str, str] = {
     "admin_audit_menu_title": "📜 Последние действия администратора:",
     "admin_audit_empty": "История действий пуста.",
     "admin_audit_entry_line": "{date} | {admin} | {action} | {entity}",
+    # --- Admins (runtime admin grant/revoke) --------------------------------------
+    "admin_admins_button": "👑 Админы",
+    "admin_admins_menu_title": "👑 Управление админами:",
+    "admin_admins_list_button": "📋 Список админов",
+    "admin_admins_add_button": "➕ Добавить админа",
+    "admin_admins_owners_header": "👑 Основные админы (через .env):",
+    "admin_admins_granted_header": "➕ Добавленные админы:",
+    "admin_admins_none": "  (нет)",
+    "admin_admins_owner_line": "  🆔 {telegram_id}",
+    "admin_admins_granted_line": "  🆔 {telegram_id} — {label} (добавил: {granted_by})",
+    "admin_admins_revoke_row": "🗑 {label}",
+    "admin_admins_owners_only": "⛔ Это действие могут выполнять только основные админы.",
+    "admin_admins_enter_telegram_id_prompt": "Введите числовой Telegram ID нового админа:",
+    "admin_admins_enter_label_prompt": (
+        "Введите короткую заметку об этом админе (например, имя или @username), "
+        'или отправьте "-", чтобы пропустить:'
+    ),
+    "admin_admins_cannot_self_grant": "⛔ Вы не можете назначить себе права админа.",
+    "admin_admins_already_owner": "Этот пользователь уже основной админ (через .env).",
+    "admin_admins_already_granted": "Этот пользователь уже имеет права админа.",
+    "admin_admins_grant_confirm_prompt": (
+        "Подтвердите: выдать права админа 🆔 {telegram_id} ({label})?"
+    ),
+    "admin_admins_granted": "✅ Права админа выданы 🆔 {telegram_id}.",
+    "admin_admins_revoke_confirm_prompt": "Подтвердите отзыв прав админа у 🆔 {telegram_id}?",
+    "admin_admins_revoked": "🗑 Права админа отозваны у 🆔 {telegram_id}.",
+    "admin_admins_you_were_granted": "✅ Вам выданы права доступа к панели администратора. Нажмите /start.",
+    "admin_admins_you_were_revoked": "⛔ Ваши права доступа к панели администратора отозваны.",
 }

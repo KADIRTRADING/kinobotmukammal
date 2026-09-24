@@ -500,4 +500,32 @@ TRANSLATIONS: dict[str, str] = {
     "admin_audit_menu_title": "📜 So'nggi admin amallari:",
     "admin_audit_empty": "Amallar tarixi bo'sh.",
     "admin_audit_entry_line": "{date} | {admin} | {action} | {entity}",
+    # --- Admins (runtime admin grant/revoke) --------------------------------------
+    "admin_admins_button": "👑 Adminlar",
+    "admin_admins_menu_title": "👑 Adminlarni boshqarish:",
+    "admin_admins_list_button": "📋 Adminlar ro'yxati",
+    "admin_admins_add_button": "➕ Admin qo'shish",
+    "admin_admins_owners_header": "👑 Asosiy adminlar (.env orqali):",
+    "admin_admins_granted_header": "➕ Qo'shilgan adminlar:",
+    "admin_admins_none": "  (yo'q)",
+    "admin_admins_owner_line": "  🆔 {telegram_id}",
+    "admin_admins_granted_line": "  🆔 {telegram_id} — {label} (kim qo'shdi: {granted_by})",
+    "admin_admins_revoke_row": "🗑 {label}",
+    "admin_admins_owners_only": "⛔ Bu amalni faqat asosiy adminlar bajara oladi.",
+    "admin_admins_enter_telegram_id_prompt": "Yangi admin uchun Telegram raqamli ID sini kiriting:",
+    "admin_admins_enter_label_prompt": (
+        "Ushbu admin haqida qisqa izoh kiriting (masalan, ism yoki @username), "
+        'yoki izohsiz o\'tkazib yuborish uchun "-" yuboring:'
+    ),
+    "admin_admins_cannot_self_grant": "⛔ O'zingizga admin huquqini bera olmaysiz.",
+    "admin_admins_already_owner": "Bu foydalanuvchi allaqachon asosiy admin (.env orqali).",
+    "admin_admins_already_granted": "Bu foydalanuvchi allaqachon admin huquqiga ega.",
+    "admin_admins_grant_confirm_prompt": (
+        "Tasdiqlang: 🆔 {telegram_id} ({label}) ga admin huquqi berilsinmi?"
+    ),
+    "admin_admins_granted": "✅ 🆔 {telegram_id} ga admin huquqi berildi.",
+    "admin_admins_revoke_confirm_prompt": "🆔 {telegram_id} uchun admin huquqini bekor qilishni tasdiqlaysizmi?",
+    "admin_admins_revoked": "🗑 🆔 {telegram_id} uchun admin huquqi bekor qilindi.",
+    "admin_admins_you_were_granted": "✅ Sizga bot boshqaruv paneliga kirish huquqi berildi. /start bosing.",
+    "admin_admins_you_were_revoked": "⛔ Sizning admin boshqaruv paneliga kirish huquqingiz bekor qilindi.",
 }

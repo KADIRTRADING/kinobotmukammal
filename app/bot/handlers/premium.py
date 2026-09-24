@@ -171,7 +171,7 @@ async def _finalize_full_premium_promo(
     await message.answer(t(user.language, "promo_redeem_success_full"))
     await message.answer(
         t(user.language, "main_menu_title"),
-        reply_markup=main_menu_keyboard_for_telegram_id(user.language, user.telegram_id),
+        reply_markup=await main_menu_keyboard_for_telegram_id(user.language, user.telegram_id, uow),
     )
     await state.clear()
 
@@ -306,7 +306,7 @@ async def handle_wallet_checkout_confirm(
     )
     await callback.message.answer(
         t(user.language, "main_menu_title"),
-        reply_markup=main_menu_keyboard_for_telegram_id(user.language, user.telegram_id),
+        reply_markup=await main_menu_keyboard_for_telegram_id(user.language, user.telegram_id, uow),
     )
     await state.clear()
     await callback.answer()
@@ -365,5 +365,5 @@ async def handle_successful_payment(
     )
     await message.answer(
         t(user.language, "main_menu_title"),
-        reply_markup=main_menu_keyboard_for_telegram_id(user.language, user.telegram_id),
+        reply_markup=await main_menu_keyboard_for_telegram_id(user.language, user.telegram_id, uow),
     )

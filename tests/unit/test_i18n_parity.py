@@ -63,6 +63,7 @@ def test_admin_panel_keys_are_present():
         "admin_order_",
         "admin_settings_",
         "admin_audit_",
+        "admin_admins_",
     )
     for prefix in required_prefixes:
         assert any(k.startswith(prefix) for k in UZ), f"No key found with prefix {prefix!r}"

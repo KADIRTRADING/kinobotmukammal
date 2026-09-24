@@ -50,7 +50,7 @@ async def handle_admin_exit(
     await state.clear()
     await callback.message.answer(
         t(user.language, "main_menu_title"),
-        reply_markup=main_menu_keyboard_for_telegram_id(user.language, user.telegram_id),
+        reply_markup=await main_menu_keyboard_for_telegram_id(user.language, user.telegram_id, uow),
     )
     await callback.answer()
 

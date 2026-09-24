@@ -19,11 +19,13 @@ from aiogram.types import CallbackQuery, Message
 
 from app.config import Settings, get_settings
 from app.core.admin_access import AdminAccessContext, is_authorized_admin
+from app.db.uow import UnitOfWork
 
 
 class AdminAccessFilter(BaseFilter):
     """Returns True only for messages/callbacks from an allowlisted
-    Telegram id, sent directly (not forwarded) in a private chat.
+    Telegram id (env owner OR an active DB `AdminGrant`), sent directly
+    (not forwarded) in a private chat.
 
     Rejected updates are silently filtered out by aiogram (the router
     simply doesn't match), so an unauthorized sender gets no response at
@@ -31,15 +33,23 @@ class AdminAccessFilter(BaseFilter):
     exist. This is deliberate: it avoids confirming to a prober whether a
     given callback_data string is "valid but unauthorized" versus
     "unrecognized".
+
+    aiogram calls filters with the same keyword-argument data dict it
+    passes to handlers (see `Dispatcher`/`Router` dependency injection),
+    so `uow` is available here exactly like it is inside a handler body --
+    `DbSessionMiddleware` runs before this filter is ever evaluated (it is
+    an `outer_middleware`, filters run inside the update-processing chain
+    it wraps). No extra plumbing is required.
     """
 
     def __init__(self, settings: Settings | None = None) -> None:
         self._settings = settings
 
-    async def __call__(self, event: Message | CallbackQuery) -> bool:
+    async def __call__(self, event: Message | CallbackQuery, uow: UnitOfWork, **kwargs) -> bool:
         settings = self._settings or get_settings()
         context = _build_context(event)
-        decision = is_authorized_admin(context, settings)
+        granted_admin_ids = await uow.admin_grants.list_active_telegram_ids()
+        decision = is_authorized_admin(context, settings, granted_admin_ids)
         return decision.allowed
 
 

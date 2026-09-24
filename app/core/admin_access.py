@@ -7,10 +7,25 @@ isolation; `app.bot.filters.admin_filter.AdminAccessFilter` is the thin
 aiogram adapter that calls into it.
 
 Security model (spec requirements):
-  - The allowlist is `Settings.telegram_superadmin_ids`, read fresh from
-    config on every check (see `is_authorized_admin`) -- changing the env
-    var and restarting the process is enough to add/remove an admin; no
-    code change, no DB row, no username/password.
+  - There are TWO tiers of admin identity, both still nothing more than a
+    numeric Telegram id -- neither has a username/password:
+      1. "Owners" -- `Settings.telegram_superadmin_ids`, read fresh from
+         config on every check. Changing the env var and restarting the
+         process is enough to add/remove an owner; no code change, no DB
+         row needed. Owners are the ONLY identities allowed to grant or
+         revoke tier-2 access (see `is_owner_admin` below and
+         `app.bot.handlers.admin.admins`) -- this one-directional trust
+         means a compromised or careless granted admin can never
+         privilege-escalate by adding more admins of their own.
+      2. "Granted admins" -- rows in the `admin_grants` DB table
+         (`app.db.models.admin_grant.AdminGrant`, `is_active=True`),
+         created by an owner from inside the in-Telegram admin panel's
+         "👑 Admins" section. This is what lets an owner add a
+         co-administrator at runtime with NO `.env` edit and NO restart.
+    Both tiers pass the exact same `is_authorized_admin` check below and
+    get full access to every other admin-panel section (movies, users,
+    orders, etc.) -- the only thing gated by tier is the Admins section's
+    mutating actions themselves.
   - Authorization is decided ENTIRELY from the numeric Telegram user id of
     the actual sender of the current update, as reported by Telegram
     itself (`Message.from_user.id` / `CallbackQuery.from_user.id`). A
@@ -82,14 +97,25 @@ class AdminAccessDecision:
 
 
 def is_authorized_admin(
-    context: AdminAccessContext, settings: SuperadminIdsSource
+    context: AdminAccessContext,
+    settings: SuperadminIdsSource,
+    granted_admin_ids: frozenset[int] = frozenset(),
 ) -> AdminAccessDecision:
     """Pure authorization check. Called by the aiogram filter AND directly
-    inside handler bodies for defense-in-depth (see module docstring)."""
+    inside handler bodies for defense-in-depth (see module docstring).
+
+    `granted_admin_ids` is the current set of ACTIVE `AdminGrant.telegram_id`
+    rows (tier 2). Passing the default empty set makes this function behave
+    exactly as before for any caller that hasn't been updated yet -- e.g.
+    existing unit tests that only exercise the env allowlist.
+    """
     if context.telegram_user_id is None:
         return AdminAccessDecision(False, "no_sender_identity")
 
-    if context.telegram_user_id not in settings.telegram_superadmin_ids:
+    if (
+        context.telegram_user_id not in settings.telegram_superadmin_ids
+        and context.telegram_user_id not in granted_admin_ids
+    ):
         return AdminAccessDecision(False, "not_in_allowlist")
 
     if context.is_forwarded:
@@ -101,10 +127,32 @@ def is_authorized_admin(
     return AdminAccessDecision(True, "authorized")
 
 
-def is_superadmin_id(telegram_user_id: int | None, settings: SuperadminIdsSource) -> bool:
+def is_superadmin_id(
+    telegram_user_id: int | None,
+    settings: SuperadminIdsSource,
+    granted_admin_ids: frozenset[int] = frozenset(),
+) -> bool:
     """Cheap boolean check used for UI decisions only (e.g. whether to show
-    the "🛠 Admin panel" button). NEVER use this alone to gate an action --
-    always go through `is_authorized_admin` at the point the action
-    executes, so chat-type and forwarded-message checks are also applied.
+    the "🛠 Admin panel" button, for owners AND granted admins alike). NEVER
+    use this alone to gate an action -- always go through
+    `is_authorized_admin` at the point the action executes, so chat-type
+    and forwarded-message checks are also applied.
+    """
+    if telegram_user_id is None:
+        return False
+    return (
+        telegram_user_id in settings.telegram_superadmin_ids
+        or telegram_user_id in granted_admin_ids
+    )
+
+
+def is_owner_admin(telegram_user_id: int | None, settings: SuperadminIdsSource) -> bool:
+    """True only for a tier-1 "owner" (an id listed in the
+    `TELEGRAM_SUPERADMIN_IDS` env var), never for a tier-2 granted admin.
+    This is the ONLY check that should gate the Admins section's
+    grant/revoke actions -- a granted admin must never be able to grant or
+    revoke access for anyone, including themselves, which would otherwise
+    let a single compromised granted-admin account permanently entrench
+    itself or add more admins.
     """
     return telegram_user_id is not None and telegram_user_id in settings.telegram_superadmin_ids
