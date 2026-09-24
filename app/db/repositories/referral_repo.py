@@ -78,12 +78,19 @@ class ReferralRepository:
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
-    async def list_suspicious(self, limit: int = 50) -> list[Referral]:
+    async def list_suspicious(self, limit: int = 50, offset: int = 0) -> list[Referral]:
         stmt = (
             select(Referral)
             .where(Referral.is_suspicious.is_(True))
             .order_by(Referral.attributed_at.desc())
             .limit(limit)
+            .offset(offset)
         )
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
+
+    async def count_suspicious(self) -> int:
+        result = await self.session.execute(
+            select(func.count(Referral.id)).where(Referral.is_suspicious.is_(True))
+        )
+        return int(result.scalar_one())

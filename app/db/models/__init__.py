@@ -4,6 +4,7 @@ Alembic autogenerate and for `Base.metadata.create_all()` in tests.
 
 from app.db.base import Base  # noqa: F401
 from app.db.models.admin import Admin, AuditLog  # noqa: F401
+from app.db.models.admin_grant import AdminGrant  # noqa: F401
 from app.db.models.blogger import BloggerApplication, BloggerProfile  # noqa: F401
 from app.db.models.broadcast import Broadcast, BroadcastRecipient  # noqa: F401
 from app.db.models.catalog import Category, MandatoryChannel, Movie  # noqa: F401
@@ -22,6 +23,7 @@ __all__ = [
     "Base",
     "Admin",
     "AuditLog",
+    "AdminGrant",
     "BloggerApplication",
     "BloggerProfile",
     "Broadcast",

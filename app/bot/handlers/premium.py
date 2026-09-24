@@ -15,7 +15,7 @@ from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message, PreCheckoutQuery
 
-from app.bot.keyboards.common import confirm_keyboard, main_menu_keyboard
+from app.bot.keyboards.common import confirm_keyboard, main_menu_keyboard_for_telegram_id
 from app.bot.keyboards.premium import (
     payment_method_keyboard,
     plan_list_keyboard,
@@ -170,7 +170,8 @@ async def _finalize_full_premium_promo(
     )
     await message.answer(t(user.language, "promo_redeem_success_full"))
     await message.answer(
-        t(user.language, "main_menu_title"), reply_markup=main_menu_keyboard(user.language)
+        t(user.language, "main_menu_title"),
+        reply_markup=await main_menu_keyboard_for_telegram_id(user.language, user.telegram_id, uow),
     )
     await state.clear()
 
@@ -304,7 +305,8 @@ async def handle_wallet_checkout_confirm(
         t(user.language, "premium_payment_success", until=updated_user.premium_until.isoformat())
     )
     await callback.message.answer(
-        t(user.language, "main_menu_title"), reply_markup=main_menu_keyboard(user.language)
+        t(user.language, "main_menu_title"),
+        reply_markup=await main_menu_keyboard_for_telegram_id(user.language, user.telegram_id, uow),
     )
     await state.clear()
     await callback.answer()
@@ -362,5 +364,6 @@ async def handle_successful_payment(
         t(user.language, "premium_payment_success", until=updated_user.premium_until.isoformat())
     )
     await message.answer(
-        t(user.language, "main_menu_title"), reply_markup=main_menu_keyboard(user.language)
+        t(user.language, "main_menu_title"),
+        reply_markup=await main_menu_keyboard_for_telegram_id(user.language, user.telegram_id, uow),
     )

@@ -61,20 +61,52 @@ class OrderRepository:
         await self.session.flush()
         return order
 
-    async def list_for_user(self, user_id: int, limit: int = 50) -> list[Order]:
+    async def list_for_user(self, user_id: int, limit: int = 50, offset: int = 0) -> list[Order]:
         stmt = (
             select(Order)
             .where(Order.buyer_user_id == user_id)
             .order_by(Order.created_at.desc())
             .limit(limit)
+            .offset(offset)
         )
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
-    async def list_recent(self, limit: int = 100, status: str | None = None) -> list[Order]:
-        stmt = select(Order).order_by(Order.created_at.desc()).limit(limit)
+    async def count_for_user(self, user_id: int) -> int:
+        from sqlalchemy import func
+
+        result = await self.session.execute(
+            select(func.count(Order.id)).where(Order.buyer_user_id == user_id)
+        )
+        return int(result.scalar_one())
+
+    async def list_recent(
+        self, limit: int = 100, status: str | None = None, offset: int = 0
+    ) -> list[Order]:
+        stmt = select(Order).order_by(Order.created_at.desc()).limit(limit).offset(offset)
         if status:
             stmt = stmt.where(Order.status == status)
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def count_recent(self, status: str | None = None) -> int:
+        from sqlalchemy import func
+
+        stmt = select(func.count(Order.id))
+        if status:
+            stmt = stmt.where(Order.status == status)
+        result = await self.session.execute(stmt)
+        return int(result.scalar_one())
+
+    async def list_provider_events_for_order(
+        self, order_id: int, limit: int = 50
+    ) -> list[ProviderEvent]:
+        stmt = (
+            select(ProviderEvent)
+            .where(ProviderEvent.order_id == order_id)
+            .order_by(ProviderEvent.received_at.desc())
+            .limit(limit)
+        )
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 

@@ -9,7 +9,10 @@ from aiogram import F, Router
 from aiogram.filters import CommandObject, CommandStart
 from aiogram.types import CallbackQuery, Message
 
-from app.bot.keyboards.common import language_selection_keyboard, main_menu_keyboard
+from app.bot.keyboards.common import (
+    language_selection_keyboard,
+    main_menu_keyboard_for_telegram_id,
+)
 from app.db.uow import UnitOfWork
 from app.i18n import SUPPORTED_LANGUAGES, t
 from app.services.referral_service import ReferralService
@@ -53,7 +56,8 @@ async def handle_start(message: Message, command: CommandObject, uow: UnitOfWork
         return
 
     await message.answer(
-        t(user.language, "main_menu_title"), reply_markup=main_menu_keyboard(user.language)
+        t(user.language, "main_menu_title"),
+        reply_markup=await main_menu_keyboard_for_telegram_id(user.language, user.telegram_id, uow),
     )
 
 
@@ -72,6 +76,7 @@ async def handle_language_choice(callback: CallbackQuery, uow: UnitOfWork, **kwa
     await uow.users.set_language(user, language)
     await callback.message.edit_text(t(language, "language_set"))
     await callback.message.answer(
-        t(language, "main_menu_title"), reply_markup=main_menu_keyboard(language)
+        t(language, "main_menu_title"),
+        reply_markup=await main_menu_keyboard_for_telegram_id(language, user.telegram_id, uow),
     )
     await callback.answer()

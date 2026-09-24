@@ -84,11 +84,12 @@ class UserRepository:
         user.block_reason = reason
         await self.session.flush()
 
-    async def search_by_name_or_id(self, query: str, limit: int = 20) -> list[User]:
-        stmt = select(User).limit(limit)
+    async def search_by_name_or_id(
+        self, query: str, limit: int = 20, offset: int = 0
+    ) -> list[User]:
         if query.isdigit():
-            stmt = select(User).where(User.telegram_id == int(query))
-        else:
+            stmt = select(User).where(User.telegram_id == int(query)).limit(limit).offset(offset)
+        elif query:
             like = f"%{query.lower()}%"
             stmt = (
                 select(User)
@@ -97,15 +98,47 @@ class UserRepository:
                     | (User.first_name.ilike(like))
                     | (User.last_name.ilike(like))
                 )
+                .order_by(User.id)
                 .limit(limit)
+                .offset(offset)
             )
+        else:
+            stmt = select(User).order_by(User.id).limit(limit).offset(offset)
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
+
+    async def count_search_by_name_or_id(self, query: str) -> int:
+        from sqlalchemy import func
+
+        if query.isdigit():
+            stmt = select(func.count(User.id)).where(User.telegram_id == int(query))
+        elif query:
+            like = f"%{query.lower()}%"
+            stmt = select(func.count(User.id)).where(
+                (User.username.ilike(like))
+                | (User.first_name.ilike(like))
+                | (User.last_name.ilike(like))
+            )
+        else:
+            stmt = select(func.count(User.id))
+        result = await self.session.execute(stmt)
+        return int(result.scalar_one())
 
     async def count_all(self) -> int:
         from sqlalchemy import func
 
         result = await self.session.execute(select(func.count(User.id)))
+        return int(result.scalar_one())
+
+    async def count_active_since(self, since: dt.datetime) -> int:
+        """Number of users whose `last_seen_at` (updated on every /start,
+        see `touch_start`) falls on or after `since` -- used by the admin
+        dashboard's "active users" metric (spec: "active users")."""
+        from sqlalchemy import func
+
+        result = await self.session.execute(
+            select(func.count(User.id)).where(User.last_seen_at >= since)
+        )
         return int(result.scalar_one())
 
     async def grant_premium_until(self, user: User, until: dt.datetime) -> None:
