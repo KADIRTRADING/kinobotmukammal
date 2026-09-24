@@ -83,7 +83,7 @@ class PromoRepository:
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
-    async def list_pending_moderation(self, limit: int = 50) -> list[PromoCode]:
+    async def list_pending_moderation(self, limit: int = 50, offset: int = 0) -> list[PromoCode]:
         from app.db.models.enums import PromoModerationStatus
 
         stmt = (
@@ -91,9 +91,34 @@ class PromoRepository:
             .where(PromoCode.moderation_status == PromoModerationStatus.PENDING.value)
             .order_by(PromoCode.created_at.asc())
             .limit(limit)
+            .offset(offset)
         )
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
+
+    async def count_pending_moderation(self) -> int:
+        from sqlalchemy import func
+
+        from app.db.models.enums import PromoModerationStatus
+
+        result = await self.session.execute(
+            select(func.count(PromoCode.id)).where(
+                PromoCode.moderation_status == PromoModerationStatus.PENDING.value
+            )
+        )
+        return int(result.scalar_one())
+
+    async def get(self, promo_id: int) -> PromoCode | None:
+        result = await self.session.execute(select(PromoCode).where(PromoCode.id == promo_id))
+        return result.scalar_one_or_none()
+
+    async def count_redemptions(self, promo_id: int) -> int:
+        from sqlalchemy import func
+
+        result = await self.session.execute(
+            select(func.count(PromoRedemption.id)).where(PromoRedemption.promo_code_id == promo_id)
+        )
+        return int(result.scalar_one())
 
     async def list_expired_unreleased(self, limit: int = 200) -> list[PromoCode]:
         now = dt.datetime.now(dt.UTC)

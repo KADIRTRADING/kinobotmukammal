@@ -26,6 +26,12 @@ dependencies = [
     "itsdangerous>=2.2,<3.0",
     "Jinja2>=3.1,<4.0",
     "passlib[bcrypt]>=1.7,<2.0",
+    # passlib 1.7.4's bcrypt backend probes `bcrypt.__about__.__version__`,
+    # which was removed in bcrypt 4.1+, causing a hard AttributeError/warning
+    # at import time. Pin to the last 4.0.x line so passlib's version-sniffing
+    # keeps working until passlib itself is upgraded to a release that
+    # supports bcrypt>=4.1's version metadata.
+    "bcrypt>=4.0.1,<4.1",
     "babel>=2.16,<3.0",
     "tenacity>=9.0,<10.0",
 ]

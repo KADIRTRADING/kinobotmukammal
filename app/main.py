@@ -63,7 +63,27 @@ def create_api_app() -> FastAPI:
     app.include_router(stripe_webhook_router)
     app.include_router(click_webhook_router)
     app.include_router(storefront_router)
-    app.include_router(admin_router)
+
+    # The legacy browser-based web admin panel (username/password login at
+    # /admin/login) is now DISABLED BY DEFAULT: the in-Telegram admin panel
+    # (the "🛠 Admin panel" button, gated by TELEGRAM_SUPERADMIN_IDS -- see
+    # app.bot.handlers.admin) is the primary admin UI. Payment webhooks and
+    # the Telegram webhook route above are NEVER affected by this flag --
+    # only the /admin/* browser routes are conditionally mounted. Set
+    # WEB_ADMIN_ENABLED=true in .env to restore the web panel (e.g. for a
+    # migration period or for operators who still want a browser view);
+    # when enabled you are still responsible for running
+    # `python -m scripts.create_superadmin` to create its login, and for
+    # putting it behind your own network/reverse-proxy access control.
+    if settings.WEB_ADMIN_ENABLED:
+        app.include_router(admin_router)
+        logger.warning(
+            "WEB_ADMIN_ENABLED=true: the legacy browser admin panel is mounted at /admin/*. "
+            "Restrict network access to it yourself (e.g. VPN/allowlist) -- it is not "
+            "protected by the Telegram admin allowlist."
+        )
+    else:
+        logger.info("WEB_ADMIN_ENABLED=false: legacy web admin panel routes are NOT mounted.")
 
     @app.get("/health")
     async def health() -> JSONResponse:

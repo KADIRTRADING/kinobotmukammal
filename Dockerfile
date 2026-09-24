@@ -21,6 +21,7 @@ COPY app ./app
 COPY alembic ./alembic
 COPY alembic.ini ./alembic.ini
 COPY README.md ./README.md
+COPY scripts ./scripts
 
 RUN pip install --upgrade pip && pip install .
 

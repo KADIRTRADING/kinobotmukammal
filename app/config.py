@@ -30,7 +30,22 @@ class Settings(BaseSettings):
     BOT_USERNAME: str = "YourMovieBot"
     BOT_WEBHOOK_URL: str = ""
     BOT_WEBHOOK_SECRET: str = "change-me"
-    BOOTSTRAP_SUPERADMIN_IDS: str = ""
+
+    # Comma-separated numeric Telegram user IDs authorized to use the
+    # in-Telegram admin panel. This is the ONLY source of admin authority
+    # for the bot-side admin UI -- there is no username/password step and
+    # no `Admin` DB row required. Every admin message/callback/state
+    # transition re-checks the sender's numeric `telegram_id` against this
+    # list on the server side (see app.core.admin_access); hiding a button
+    # from non-admins is a UX nicety, never the actual authorization check.
+    TELEGRAM_SUPERADMIN_IDS: str = ""
+
+    # Master switch for the legacy web admin panel (app/admin/*). Disabled
+    # by default now that the Telegram-native admin panel is the primary
+    # admin UI. Payment/Telegram webhook routes are NEVER gated by this --
+    # only the /admin/* browser UI is affected. See README "Web admin panel
+    # (legacy, disabled by default)".
+    WEB_ADMIN_ENABLED: bool = False
 
     # --- Database ---------------------------------------------------------------
     DATABASE_URL: str = "postgresql+asyncpg://movie_bot:change-me@localhost:5432/movie_bot"
@@ -74,14 +89,29 @@ class Settings(BaseSettings):
     BACKUP_DIR: str = "/var/backups/movie_bot"
     BACKUP_RETENTION_DAYS: int = 14
 
-    @field_validator("BOOTSTRAP_SUPERADMIN_IDS")
+    @field_validator("TELEGRAM_SUPERADMIN_IDS")
     @classmethod
     def _strip(cls, v: str) -> str:
         return v.strip()
 
     @property
-    def bootstrap_superadmin_ids(self) -> list[int]:
-        return [int(x) for x in self.BOOTSTRAP_SUPERADMIN_IDS.split(",") if x.strip()]
+    def telegram_superadmin_ids(self) -> frozenset[int]:
+        """Parsed, de-duplicated set of authorized admin Telegram user IDs.
+
+        Invalid (non-numeric) entries are ignored rather than raising, so a
+        typo in one entry doesn't take down the whole allowlist -- but they
+        are logged as a warning by `app.core.admin_access` at startup.
+        """
+        ids: set[int] = set()
+        for raw in self.TELEGRAM_SUPERADMIN_IDS.split(","):
+            raw = raw.strip()
+            if not raw:
+                continue
+            try:
+                ids.add(int(raw))
+            except ValueError:
+                continue
+        return frozenset(ids)
 
     @property
     def default_mandatory_channels(self) -> list[str]:
@@ -110,6 +140,11 @@ class Settings(BaseSettings):
         if self.PAYMENTS_CLICK_ENABLED and self.CLICK_MODE == "live":
             if not (self.CLICK_MERCHANT_ID and self.CLICK_SECRET_KEY):
                 problems.append("Click live mode requires CLICK_MERCHANT_ID and CLICK_SECRET_KEY")
+        if not self.telegram_superadmin_ids:
+            problems.append(
+                "TELEGRAM_SUPERADMIN_IDS must list at least one numeric Telegram user ID "
+                "so someone can actually reach the in-Telegram admin panel"
+            )
         if problems:
             raise RuntimeError("Invalid production configuration:\n- " + "\n- ".join(problems))
 

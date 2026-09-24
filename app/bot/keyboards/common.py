@@ -7,6 +7,8 @@ from aiogram.types import (
     ReplyKeyboardMarkup,
 )
 
+from app.config import get_settings
+from app.core.admin_access import is_superadmin_id
 from app.i18n import t
 
 
@@ -22,7 +24,16 @@ def language_selection_keyboard() -> InlineKeyboardMarkup:
     )
 
 
-def main_menu_keyboard(language: str) -> ReplyKeyboardMarkup:
+def main_menu_keyboard(language: str, *, is_admin: bool = False) -> ReplyKeyboardMarkup:
+    """The normal user menu. `is_admin` adds an EXTRA "🛠 Admin panel" row
+    for allowlisted Telegram IDs only -- callers must pass this based on
+    `app.core.admin_access.is_superadmin_id(user.telegram_id, settings)`,
+    never based on anything the user could influence. This flag only
+    controls whether the button is *shown*; every admin action is still
+    independently re-authorized server-side on every message/callback (see
+    app.bot.filters.admin_filter.AdminAccessFilter) -- hiding this button
+    from everyone else is a UX nicety, not the security boundary.
+    """
     rows = [
         [
             KeyboardButton(text=t(language, "menu_search_movie")),
@@ -42,7 +53,22 @@ def main_menu_keyboard(language: str) -> ReplyKeyboardMarkup:
         ],
         [KeyboardButton(text=t(language, "menu_settings"))],
     ]
+    if is_admin:
+        rows.append([KeyboardButton(text=t(language, "admin_menu_button"))])
     return ReplyKeyboardMarkup(keyboard=rows, resize_keyboard=True)
+
+
+def main_menu_keyboard_for_telegram_id(
+    language: str, telegram_id: int | None
+) -> ReplyKeyboardMarkup:
+    """Convenience wrapper used by every handler that renders the main
+    menu: resolves `is_admin` from the live settings allowlist so callers
+    never have to import `app.core.admin_access` themselves. This is the
+    preferred entrypoint over calling `main_menu_keyboard` directly with a
+    hand-computed `is_admin` value.
+    """
+    settings = get_settings()
+    return main_menu_keyboard(language, is_admin=is_superadmin_id(telegram_id, settings))
 
 
 def cancel_keyboard(language: str) -> ReplyKeyboardMarkup:

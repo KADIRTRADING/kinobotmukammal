@@ -68,7 +68,7 @@ class SupportRepository:
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
-    async def list_open(self, limit: int = 50) -> list[SupportTicket]:
+    async def list_open(self, limit: int = 50, offset: int = 0) -> list[SupportTicket]:
         stmt = (
             select(SupportTicket)
             .where(
@@ -78,9 +78,22 @@ class SupportRepository:
             )
             .order_by(SupportTicket.created_at.asc())
             .limit(limit)
+            .offset(offset)
         )
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
+
+    async def count_open(self) -> int:
+        from sqlalchemy import func
+
+        result = await self.session.execute(
+            select(func.count(SupportTicket.id)).where(
+                SupportTicket.status.in_(
+                    [SupportTicketStatus.OPEN.value, SupportTicketStatus.PENDING.value]
+                )
+            )
+        )
+        return int(result.scalar_one())
 
     async def close_ticket(self, ticket: SupportTicket) -> None:
         ticket.status = SupportTicketStatus.CLOSED.value

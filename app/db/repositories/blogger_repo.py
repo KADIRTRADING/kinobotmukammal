@@ -53,15 +53,26 @@ class BloggerRepository:
         application.submitted_url = url
         await self.session.flush()
 
-    async def list_pending(self, limit: int = 50) -> list[BloggerApplication]:
+    async def list_pending(self, limit: int = 50, offset: int = 0) -> list[BloggerApplication]:
         stmt = (
             select(BloggerApplication)
             .where(BloggerApplication.status == BloggerApplicationStatus.PENDING.value)
             .order_by(BloggerApplication.created_at.asc())
             .limit(limit)
+            .offset(offset)
         )
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
+
+    async def count_pending(self) -> int:
+        from sqlalchemy import func
+
+        result = await self.session.execute(
+            select(func.count(BloggerApplication.id)).where(
+                BloggerApplication.status == BloggerApplicationStatus.PENDING.value
+            )
+        )
+        return int(result.scalar_one())
 
     async def decide(
         self,
@@ -119,6 +130,13 @@ class BloggerRepository:
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def list_all(self, limit: int = 100) -> list[BloggerProfile]:
-        result = await self.session.execute(select(BloggerProfile).limit(limit))
+    async def list_all(self, limit: int = 100, offset: int = 0) -> list[BloggerProfile]:
+        stmt = select(BloggerProfile).order_by(BloggerProfile.id).limit(limit).offset(offset)
+        result = await self.session.execute(stmt)
         return list(result.scalars().all())
+
+    async def count_all(self) -> int:
+        from sqlalchemy import func
+
+        result = await self.session.execute(select(func.count(BloggerProfile.id)))
+        return int(result.scalar_one())
