@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models.catalog import Category, MandatoryChannel, Movie
+from app.db.models.catalog import Category, ChannelJoinRequest, MandatoryChannel, Movie
 from app.db.models.enums import MoviePublicationState
 
 
@@ -31,15 +31,20 @@ class CatalogRepository:
         return result.scalar_one_or_none()
 
     async def search_published(self, query: str, limit: int = 15) -> list[Movie]:
-        """Exact code match, exact-title match, or partial-title search, all
-        scoped to published movies only (drafts/archived never surface to
-        end users)."""
+        """Exact-title or partial-title search, scoped to published movies only.
+        Never matches codes -- codes require full exact match via get_by_code."""
         published = MoviePublicationState.PUBLISHED.value
         q = query.strip().lower()
         stmt = (
             select(Movie)
             .where(Movie.publication_state == published)
-            .where(Movie.search_text.ilike(f"%{q}%"))
+            .where(
+                or_(
+                    Movie.title_uz.ilike(f"%{q}%"),
+                    Movie.title_ru.ilike(f"%{q}%"),
+                    Movie.title_en.ilike(f"%{q}%"),
+                )
+            )
             .order_by(Movie.view_count.desc())
             .limit(limit)
         )
@@ -82,7 +87,7 @@ class CatalogRepository:
 
     @staticmethod
     def _build_search_text(movie: Movie) -> str:
-        parts = [movie.code, movie.title_uz, movie.title_ru, movie.title_en]
+        parts = [movie.title_uz, movie.title_ru, movie.title_en]
         return " | ".join(p.lower() for p in parts if p)
 
     # --- Mandatory channels ------------------------------------------------------
@@ -95,3 +100,40 @@ class CatalogRepository:
     async def list_all_channels(self) -> list[MandatoryChannel]:
         result = await self.session.execute(select(MandatoryChannel))
         return list(result.scalars().all())
+
+    async def get_channel_by_chat_id(self, chat_id: str) -> MandatoryChannel | None:
+        cid = str(chat_id).strip()
+        result = await self.session.execute(
+            select(MandatoryChannel).where(MandatoryChannel.chat_id == cid)
+        )
+        return result.scalar_one_or_none()
+
+    async def update_channel_invite_link(
+        self, channel: MandatoryChannel, invite_link: str
+    ) -> MandatoryChannel:
+        channel.invite_link = invite_link
+        await self.session.flush()
+        return channel
+
+    # --- Channel join requests ---------------------------------------------------
+    async def record_join_request(self, chat_id: str, telegram_id: int) -> ChannelJoinRequest:
+        cid = str(chat_id).strip()
+        stmt = select(ChannelJoinRequest).where(
+            ChannelJoinRequest.chat_id == cid,
+            ChannelJoinRequest.telegram_id == telegram_id,
+        )
+        existing = (await self.session.execute(stmt)).scalar_one_or_none()
+        if existing:
+            return existing
+        cjr = ChannelJoinRequest(chat_id=cid, telegram_id=telegram_id)
+        self.session.add(cjr)
+        await self.session.flush()
+        return cjr
+
+    async def has_join_request(self, chat_id: str, telegram_id: int) -> bool:
+        cid = str(chat_id).strip()
+        stmt = select(ChannelJoinRequest.id).where(
+            ChannelJoinRequest.chat_id == cid,
+            ChannelJoinRequest.telegram_id == telegram_id,
+        )
+        return (await self.session.execute(stmt)).scalar_one_or_none() is not None

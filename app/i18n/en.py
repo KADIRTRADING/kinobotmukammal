@@ -33,6 +33,13 @@ TRANSLATIONS: dict[str, str] = {
     "movie_inline_card_description": 'Tap "Open in Bot" to watch this movie.',
     "movie_categories_title": "Choose a category:",
     "movie_no_movies_in_category": "No movies in this category yet.",
+    "group_movie_not_bot_user": "This movie is not visible to you. Only this bot's users can see it. Start the bot to see the movie.",
+    "group_movie_premium_required": "This movie is for premium users. Start the bot and buy premium, this movie is premium.",
+    "group_movie_sent_to_pm": "The movie has been sent to your private chat with the bot! 🎬",
+    "group_movie_card": "🎬 {title}\n🔢 Code: {code}\n\n👤 {user}, the movie has been sent to you in the bot!\nOthers can tap the button below to watch:",
+    "group_watch_button": "🎬 Watch movie",
+    "group_start_bot_button": "▶️ Start the bot",
+    "group_buy_premium_button": "⭐ Buy Premium",
     "premium_plans_title": "Choose one of the premium plans:",
     "premium_plan_button": "{title} — {price} {currency}",
     "premium_plan_details": (

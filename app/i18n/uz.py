@@ -37,6 +37,13 @@ TRANSLATIONS: dict[str, str] = {
     "movie_inline_card_description": "Ushbu kinoni ko'rish uchun botda ochish tugmasini bosing.",
     "movie_categories_title": "Kategoriyalardan birini tanlang:",
     "movie_no_movies_in_category": "Bu kategoriyada hali kinolar yo'q.",
+    "group_movie_not_bot_user": "Ushbu kino sizga ko'rinmaydi. Uni faqat bot foydalanuvchilari ko'ra oladi. Kinoni ko'rish uchun botni ishga tushiring.",
+    "group_movie_premium_required": "Ushbu kino Premium foydalanuvchilar uchun. Botni ishga tushiring va Premium sotib oling, bu kino premium.",
+    "group_movie_sent_to_pm": "Kino sizga shaxsiy xabarda (botda) yuborildi! 🎬",
+    "group_movie_card": "🎬 {title}\n🔢 Kod: {code}\n\n👤 {user}, kino sizga botda yuborildi!\nBoshqalar ham kinoni ko'rish uchun quyidagi tugmani bosing:",
+    "group_watch_button": "🎬 Kinoni ko'rish",
+    "group_start_bot_button": "▶️ Botni ishga tushirish",
+    "group_buy_premium_button": "⭐ Premium sotib olish",
     # --- Premium ---------------------------------------------------------------
     "premium_plans_title": "Premium rejalardan birini tanlang:",
     "premium_plan_button": "{title} — {price} {currency}",

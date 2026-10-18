@@ -38,11 +38,16 @@ def movie_search_results_keyboard(movies: list[Movie], language: str) -> InlineK
 
 
 def join_channels_keyboard(
-    channels: list[MandatoryChannel], movie_id: int, language: str
+    channels: list[MandatoryChannel], movie_id: int | str, language: str
 ) -> InlineKeyboardMarkup:
     rows = []
     for ch in channels:
-        url = ch.invite_link or f"https://t.me/{ch.chat_id.lstrip('@')}"
+        url = ch.invite_link or ""
+        if not url:
+            if not ch.chat_id.startswith("-") and not ch.chat_id.isdigit():
+                url = f"https://t.me/{ch.chat_id.lstrip('@')}"
+        if not url or url.startswith("https://t.me/-"):
+            continue
         rows.append([InlineKeyboardButton(text=ch.title, url=url)])
     rows.append(
         [

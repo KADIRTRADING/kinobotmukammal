@@ -5,7 +5,7 @@ from __future__ import annotations
 import datetime as dt
 import uuid
 
-from sqlalchemy import BigInteger, DateTime, MetaData, func
+from sqlalchemy import BigInteger, DateTime, Integer, MetaData, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 # Naming convention keeps Alembic autogenerate deterministic and gives every
@@ -24,7 +24,9 @@ class Base(DeclarativeBase):
 
 
 class IdMixin:
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(
+        BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True
+    )
 
 
 class UuidMixin:

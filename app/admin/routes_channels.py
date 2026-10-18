@@ -28,15 +28,60 @@ async def list_channels(
     return templates.TemplateResponse("channels.html", {"request": request, "channels": channels})
 
 
+def _normalize_chat_id(raw: str) -> str:
+    s = raw.strip()
+    if s.startswith("https://t.me/"):
+        rest = s[len("https://t.me/") :]
+        if not rest.startswith(("+", "joinchat/")):
+            return f"@{rest.split('/')[0]}"
+    return s
+
+
 @router.post("/create")
 async def create_channel(
+    request: Request,
     chat_id: str = Form(...),
     title: str = Form(...),
     invite_link: str = Form(""),
     admin: Admin = Depends(require_role(AdminRole.SUPERADMIN, AdminRole.ADMIN)),
     session: AsyncSession = Depends(get_session),
 ):
-    channel = MandatoryChannel(chat_id=chat_id, title=title, invite_link=invite_link or None)
+    norm_chat_id = _normalize_chat_id(chat_id)
+    inv = invite_link.strip() or None
+    if not inv and chat_id.strip().startswith("https://t.me/"):
+        inv = chat_id.strip()
+
+    is_admin = False
+    bot = getattr(request.app.state, "bot", None)
+    if bot:
+        try:
+            cid = (
+                int(norm_chat_id)
+                if (norm_chat_id.startswith("-") or norm_chat_id.isdigit())
+                else norm_chat_id
+            )
+            me = await bot.get_me()
+            member = await bot.get_chat_member(chat_id=cid, user_id=me.id)
+            is_admin = member.status in ("administrator", "creator")
+            if is_admin and not inv:
+                try:
+                    link_obj = await bot.create_chat_invite_link(chat_id=cid)
+                    inv = link_obj.invite_link
+                except Exception:
+                    try:
+                        inv = await bot.export_chat_invite_link(chat_id=cid)
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+
+    channel = MandatoryChannel(
+        chat_id=norm_chat_id,
+        title=title.strip(),
+        invite_link=inv,
+        is_active=True,
+        bot_is_admin_verified=is_admin,
+    )
     session.add(channel)
     await session.commit()
     return RedirectResponse(url="/admin/channels", status_code=302)
@@ -51,18 +96,33 @@ async def diagnose_channel(
 ) -> HTMLResponse:
     """Checks that the bot itself is an admin of the channel (required for
     both membership checks and, when relevant, promo attribution-link
-    verification of a channel)."""
+    verification of a channel). Also auto-generates invite link if missing."""
     uow = UnitOfWork(session)
     channel = await _get_channel(uow, channel_id)
-    bot = request.app.state.bot
+    bot = getattr(request.app.state, "bot", None)
     is_admin = False
     error = None
-    try:
-        me = await bot.get_me()
-        member = await bot.get_chat_member(chat_id=channel.chat_id, user_id=me.id)
-        is_admin = member.status in ("administrator", "creator")
-    except Exception as exc:
-        error = str(exc)
+    if bot:
+        try:
+            cid = (
+                int(channel.chat_id)
+                if (channel.chat_id.startswith("-") or channel.chat_id.isdigit())
+                else channel.chat_id
+            )
+            me = await bot.get_me()
+            member = await bot.get_chat_member(chat_id=cid, user_id=me.id)
+            is_admin = member.status in ("administrator", "creator")
+            if is_admin and (not channel.invite_link or channel.invite_link.startswith("https://t.me/-")):
+                try:
+                    link_obj = await bot.create_chat_invite_link(chat_id=cid)
+                    channel.invite_link = link_obj.invite_link
+                except Exception:
+                    try:
+                        channel.invite_link = await bot.export_chat_invite_link(chat_id=cid)
+                    except Exception:
+                        pass
+        except Exception as exc:
+            error = str(exc)
 
     channel.bot_is_admin_verified = is_admin
     await session.commit()

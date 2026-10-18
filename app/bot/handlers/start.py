@@ -52,6 +52,25 @@ async def handle_start(message: Message, command: CommandObject, uow: UnitOfWork
         )
         return
 
+    channels = await uow.catalog.list_active_channels()
+    if channels and not user.is_premium_active:
+        from app.bot.handlers.movies import _get_membership_checker, ensure_channel_invite_link
+        from app.bot.keyboards.movies import join_channels_keyboard
+
+        checker = await _get_membership_checker(message.bot, uow)
+        missing = []
+        for ch in channels:
+            if not await checker(user.telegram_id, ch.chat_id):
+                missing.append(ch)
+        if missing:
+            for ch in missing:
+                await ensure_channel_invite_link(message.bot, ch, uow)
+            await message.answer(
+                t(user.language, "movie_must_join_channels"),
+                reply_markup=join_channels_keyboard(missing, 0, user.language),
+            )
+            return
+
     await message.answer(
         t(user.language, "main_menu_title"), reply_markup=main_menu_keyboard(user.language)
     )
@@ -71,6 +90,27 @@ async def handle_language_choice(callback: CallbackQuery, uow: UnitOfWork, **kwa
 
     await uow.users.set_language(user, language)
     await callback.message.edit_text(t(language, "language_set"))
+
+    channels = await uow.catalog.list_active_channels()
+    if channels and not user.is_premium_active:
+        from app.bot.handlers.movies import _get_membership_checker, ensure_channel_invite_link
+        from app.bot.keyboards.movies import join_channels_keyboard
+
+        checker = await _get_membership_checker(callback.bot, uow)
+        missing = []
+        for ch in channels:
+            if not await checker(user.telegram_id, ch.chat_id):
+                missing.append(ch)
+        if missing:
+            for ch in missing:
+                await ensure_channel_invite_link(callback.bot, ch, uow)
+            await callback.message.answer(
+                t(language, "movie_must_join_channels"),
+                reply_markup=join_channels_keyboard(missing, 0, language),
+            )
+            await callback.answer()
+            return
+
     await callback.message.answer(
         t(language, "main_menu_title"), reply_markup=main_menu_keyboard(language)
     )

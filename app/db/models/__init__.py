@@ -6,7 +6,7 @@ from app.db.base import Base  # noqa: F401
 from app.db.models.admin import Admin, AuditLog  # noqa: F401
 from app.db.models.blogger import BloggerApplication, BloggerProfile  # noqa: F401
 from app.db.models.broadcast import Broadcast, BroadcastRecipient  # noqa: F401
-from app.db.models.catalog import Category, MandatoryChannel, Movie  # noqa: F401
+from app.db.models.catalog import Category, ChannelJoinRequest, MandatoryChannel, Movie  # noqa: F401
 from app.db.models.gift import Gift  # noqa: F401
 from app.db.models.order import Entitlement, Order, ProviderEvent  # noqa: F401
 from app.db.models.plan import PremiumPlan  # noqa: F401
@@ -27,6 +27,7 @@ __all__ = [
     "Broadcast",
     "BroadcastRecipient",
     "Category",
+    "ChannelJoinRequest",
     "MandatoryChannel",
     "Movie",
     "Gift",

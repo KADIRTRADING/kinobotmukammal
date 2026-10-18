@@ -100,5 +100,16 @@ class MandatoryChannel(IdMixin, TimestampMixin, Base):
     last_checked_at: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
 
+class ChannelJoinRequest(IdMixin, TimestampMixin, Base):
+    """Tracks users who sent a join request to a mandatory channel/group.
+    Used to grant access when join requests are enabled on private channels/groups."""
+
+    __tablename__ = "channel_join_requests"
+
+    chat_id: Mapped[str] = mapped_column(String(64), index=True, nullable=False)
+    telegram_id: Mapped[int] = mapped_column(BigInteger, index=True, nullable=False)
+
+
 Index("ix_movies_category_id", Movie.category_id)
 Index("ix_movies_publication_state", Movie.publication_state)
+Index("ix_channel_join_requests_chat_user", ChannelJoinRequest.chat_id, ChannelJoinRequest.telegram_id, unique=True)

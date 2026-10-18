@@ -18,6 +18,7 @@ RUN apt-get update \
 
 COPY pyproject.toml ./
 COPY app ./app
+COPY scripts ./scripts
 COPY alembic ./alembic
 COPY alembic.ini ./alembic.ini
 COPY README.md ./README.md

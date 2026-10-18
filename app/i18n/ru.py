@@ -33,6 +33,13 @@ TRANSLATIONS: dict[str, str] = {
     "movie_inline_card_description": "Нажмите «Открыть в боте», чтобы посмотреть этот фильм.",
     "movie_categories_title": "Выберите одну из категорий:",
     "movie_no_movies_in_category": "В этой категории пока нет фильмов.",
+    "group_movie_not_bot_user": "Этот фильм вам недоступен. Его могут смотреть только пользователи этого бота. Запустите бота, чтобы посмотреть фильм.",
+    "group_movie_premium_required": "Этот фильм для Premium-пользователей. Запустите бота и купите Premium, этот фильм премиум.",
+    "group_movie_sent_to_pm": "Фильм отправлен вам в личные сообщения (в бота)! 🎬",
+    "group_movie_card": "🎬 {title}\n🔢 Код: {code}\n\n👤 {user}, фильм отправлен вам в бота!\nЧтобы другие тоже могли посмотреть, нажмите кнопку ниже:",
+    "group_watch_button": "🎬 Смотреть фильм",
+    "group_start_bot_button": "▶️ Запустить бота",
+    "group_buy_premium_button": "⭐ Купить Premium",
     "premium_plans_title": "Выберите один из премиум-планов:",
     "premium_plan_button": "{title} — {price} {currency}",
     "premium_plan_details": (

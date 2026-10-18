@@ -14,6 +14,7 @@ from aiogram.fsm.storage.redis import RedisStorage
 
 from app.bot.handlers import register_all
 from app.bot.middlewares.db_session import DbSessionMiddleware
+from app.bot.middlewares.group_filter import GroupMentionReplyMiddleware
 from app.bot.middlewares.user_context import UserContextMiddleware
 from app.config import Settings, get_settings
 from app.core.redis import get_redis
@@ -28,6 +29,9 @@ def build_dispatcher(settings: Settings | None = None) -> Dispatcher:
     settings = settings or get_settings()
     storage = RedisStorage(redis=get_redis())
     dp = Dispatcher(storage=storage)
+
+    # In groups/supergroups, only reply if mentioned or replied to.
+    dp.message.outer_middleware(GroupMentionReplyMiddleware())
 
     # Order matters: DB session must be opened before user context resolves.
     dp.update.outer_middleware(DbSessionMiddleware())

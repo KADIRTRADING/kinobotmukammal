@@ -41,9 +41,15 @@ class MovieAccessService:
 
     async def find_by_code_or_search(self, query: str) -> list[Movie]:
         query = query.strip()
+        if not query:
+            return []
         exact = await self.uow.catalog.get_by_code(query)
         if exact and exact.publication_state == MoviePublicationState.PUBLISHED.value:
             return [exact]
+        # If the user entered digits, it represents a movie code.
+        # Movie codes require full exact match -- never fall back to fuzzy/partial search.
+        if query.isdigit():
+            return []
         return await self.uow.catalog.search_published(query)
 
     async def check_access(self, *, user_id: int, telegram_id: int, movie: Movie) -> AccessDecision:

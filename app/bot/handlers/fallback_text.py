@@ -18,7 +18,7 @@ router = Router(name="fallback_text")
 
 
 @router.message(F.text)
-async def handle_fallback_text(message: Message, uow: UnitOfWork, user: User, **kwargs) -> None:
-    if user is None:
-        return
+async def handle_fallback_text(
+    message: Message, uow: UnitOfWork, user: User | None = None, **kwargs
+) -> None:
     await handle_movie_query_text(message, uow, user)
