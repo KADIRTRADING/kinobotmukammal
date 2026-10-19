@@ -16,6 +16,7 @@ TRANSLATIONS: dict[str, str] = {
     "menu_gifts": "🎉 Gifts",
     "menu_help": "🆘 Help",
     "menu_settings": "⚙️ Settings",
+    "menu_admin": "👑 Admin Panel",
     "menu_back": "⬅️ Back",
     "menu_cancel": "❌ Cancel",
     "movie_enter_code_or_name": "Enter the movie code (e.g. 222) or its name:",

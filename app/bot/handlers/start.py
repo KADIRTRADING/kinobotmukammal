@@ -9,6 +9,7 @@ from aiogram import F, Router
 from aiogram.filters import CommandObject, CommandStart
 from aiogram.types import CallbackQuery, Message
 
+from app.bot.handlers.admin_panel import is_admin_user
 from app.bot.keyboards.common import language_selection_keyboard, main_menu_keyboard
 from app.db.uow import UnitOfWork
 from app.i18n import SUPPORTED_LANGUAGES, t
@@ -71,8 +72,10 @@ async def handle_start(message: Message, command: CommandObject, uow: UnitOfWork
             )
             return
 
+    is_admin = await is_admin_user(user.telegram_id, uow)
     await message.answer(
-        t(user.language, "main_menu_title"), reply_markup=main_menu_keyboard(user.language)
+        t(user.language, "main_menu_title"),
+        reply_markup=main_menu_keyboard(user.language, is_admin=is_admin),
     )
 
 
@@ -111,7 +114,9 @@ async def handle_language_choice(callback: CallbackQuery, uow: UnitOfWork, **kwa
             await callback.answer()
             return
 
+    is_admin = await is_admin_user(user.telegram_id, uow)
     await callback.message.answer(
-        t(language, "main_menu_title"), reply_markup=main_menu_keyboard(language)
+        t(language, "main_menu_title"),
+        reply_markup=main_menu_keyboard(language, is_admin=is_admin),
     )
     await callback.answer()

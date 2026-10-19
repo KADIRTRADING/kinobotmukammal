@@ -59,6 +59,18 @@ async def _lifespan(app: FastAPI):
 
 def create_api_app() -> FastAPI:
     app = FastAPI(title="Movie Bot API", lifespan=_lifespan)
+
+    @app.middleware("http")
+    async def add_telegram_frame_headers(request, call_next):
+        response = await call_next(request)
+        if request.url.path.startswith("/admin"):
+            response.headers["Content-Security-Policy"] = (
+                "frame-ancestors 'self' https://web.telegram.org https://*.telegram.org https://webk.telegram.org https://webz.telegram.org;"
+            )
+            if "x-frame-options" in response.headers:
+                del response.headers["x-frame-options"]
+        return response
+
     app.include_router(telegram_webhook_router)
     app.include_router(stripe_webhook_router)
     app.include_router(click_webhook_router)

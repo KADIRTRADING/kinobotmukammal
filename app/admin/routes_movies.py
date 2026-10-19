@@ -12,7 +12,7 @@ don't require a live Telegram upload.
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -34,12 +34,47 @@ async def list_movies(
 ) -> HTMLResponse:
     uow = UnitOfWork(session)
     categories = await uow.catalog.list_active_categories()
-    movies = []
-    for cat in categories:
-        movies.extend(await uow.catalog.list_by_category(cat.id, limit=100))
+    movies = await uow.catalog.list_all_movies()
     return templates.TemplateResponse(
         "movies.html", {"request": request, "movies": movies, "categories": categories}
     )
+
+
+@router.post("/create")
+async def create_movie(
+    request: Request,
+    code: str = Form(...),
+    title_uz: str = Form(...),
+    title_ru: str = Form(""),
+    title_en: str = Form(""),
+    video_file_id: str = Form(...),
+    access_type: str = Form("free"),
+    category_id: str = Form(""),
+    admin: Admin = Depends(require_role(AdminRole.SUPERADMIN, AdminRole.ADMIN)),
+    session: AsyncSession = Depends(get_session),
+):
+    uow = UnitOfWork(session)
+    cid = int(category_id) if category_id and category_id.isdigit() else None
+    movie = await uow.catalog.create(
+        code=code.strip(),
+        title_uz=title_uz.strip(),
+        title_ru=title_ru.strip() or title_uz.strip(),
+        title_en=title_en.strip() or title_uz.strip(),
+        video_file_id=video_file_id.strip(),
+        category_id=cid,
+        access_type=access_type,
+        publication_state=MoviePublicationState.PUBLISHED.value,
+    )
+    await uow.audit.record(
+        admin_id=admin.id,
+        admin_username=admin.username,
+        action="create_movie",
+        entity_type="movie",
+        entity_id=str(movie.id),
+        after={"code": movie.code, "title_uz": movie.title_uz},
+    )
+    await session.commit()
+    return RedirectResponse(url="/admin/movies", status_code=302)
 
 
 @router.post("/{movie_id}/publish")

@@ -10,8 +10,8 @@ admin route by the roles allowed to use it.
 from __future__ import annotations
 
 from fastapi import Depends, HTTPException, Request
+import bcrypt
 from itsdangerous import BadSignature, SignatureExpired, TimestampSigner
-from passlib.context import CryptContext
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
@@ -21,16 +21,20 @@ from app.db.session import get_session
 from app.db.uow import UnitOfWork
 
 settings = get_settings()
-_pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 _signer = TimestampSigner(settings.APP_SECRET_KEY)
 
 
 def hash_password(password: str) -> str:
-    return _pwd_context.hash(password)
+    pwd_bytes = password.encode("utf-8")[:72]
+    return bcrypt.hashpw(pwd_bytes, bcrypt.gensalt()).decode("utf-8")
 
 
 def verify_password(password: str, password_hash: str) -> bool:
-    return _pwd_context.verify(password, password_hash)
+    try:
+        pwd_bytes = password.encode("utf-8")[:72]
+        return bcrypt.checkpw(pwd_bytes, password_hash.encode("utf-8"))
+    except Exception:
+        return False
 
 
 def create_session_token(admin_id: int) -> str:

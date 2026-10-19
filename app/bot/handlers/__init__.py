@@ -6,6 +6,7 @@ from aiogram import Dispatcher
 
 from app.bot.handlers import (
     admin_notifications,
+    admin_panel,
     blogger,
     fallback_text,
     gifts,
@@ -26,11 +27,14 @@ from app.bot.handlers import (
 def register_all(dp: Dispatcher) -> None:
     """Registration order matters:
     - `start` must be first so `/start` is matched before generic text handlers.
+    - `admin_panel` must be before movies and fallback_text so admin commands
+      and video uploads get handled before user movie queries.
     - `fallback_text` (free-text movie search) MUST be last so every menu
       button / FSM-state text handler in the other routers gets first
       refusal on a text message.
     """
     dp.include_router(start.router)
+    dp.include_router(admin_panel.router)
     dp.include_router(movies.router)
     dp.include_router(inline_search.router)
     dp.include_router(premium.router)

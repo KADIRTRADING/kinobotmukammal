@@ -108,6 +108,26 @@ class UserRepository:
         result = await self.session.execute(select(func.count(User.id)))
         return int(result.scalar_one())
 
+    async def count_today_users(self) -> int:
+        from sqlalchemy import func
+
+        today = dt.datetime.now(dt.UTC).replace(hour=0, minute=0, second=0, microsecond=0)
+        result = await self.session.execute(
+            select(func.count(User.id)).where(User.started_at >= today)
+        )
+        return int(result.scalar_one())
+
+    async def count_premium_users(self) -> int:
+        from sqlalchemy import func
+
+        now = dt.datetime.now(dt.UTC)
+        result = await self.session.execute(
+            select(func.count(User.id)).where(
+                User.premium_until.is_not(None), User.premium_until > now
+            )
+        )
+        return int(result.scalar_one())
+
     async def grant_premium_until(self, user: User, until: dt.datetime) -> None:
         # Extend, never shorten, an existing active entitlement window.
         if user.premium_until and user.premium_until > until:

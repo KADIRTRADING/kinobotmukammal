@@ -22,7 +22,7 @@ def language_selection_keyboard() -> InlineKeyboardMarkup:
     )
 
 
-def main_menu_keyboard(language: str) -> ReplyKeyboardMarkup:
+def main_menu_keyboard(language: str, is_admin: bool = False) -> ReplyKeyboardMarkup:
     rows = [
         [
             KeyboardButton(text=t(language, "menu_search_movie")),
@@ -42,6 +42,8 @@ def main_menu_keyboard(language: str) -> ReplyKeyboardMarkup:
         ],
         [KeyboardButton(text=t(language, "menu_settings"))],
     ]
+    if is_admin:
+        rows.append([KeyboardButton(text=t(language, "menu_admin"))])
     return ReplyKeyboardMarkup(keyboard=rows, resize_keyboard=True)
 
 

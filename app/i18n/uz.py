@@ -19,6 +19,7 @@ TRANSLATIONS: dict[str, str] = {
     "menu_gifts": "🎉 Sovg'alar",
     "menu_help": "🆘 Yordam",
     "menu_settings": "⚙️ Sozlamalar",
+    "menu_admin": "👑 Admin Panel",
     "menu_back": "⬅️ Orqaga",
     "menu_cancel": "❌ Bekor qilish",
     # --- Movies -----------------------------------------------------------------

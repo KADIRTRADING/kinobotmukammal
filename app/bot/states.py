@@ -54,3 +54,13 @@ class MovieAdminStates(StatesGroup):
     awaiting_poster = State()
     choosing_category = State()
     choosing_access_type = State()
+
+
+class AdminPanelStates(StatesGroup):
+    awaiting_delete_code = State()
+    awaiting_channel_add = State()
+    awaiting_broadcast_content = State()
+    awaiting_broadcast_confirm = State()
+    awaiting_promo_type = State()
+    awaiting_promo_value = State()
+    awaiting_promo_uses = State()

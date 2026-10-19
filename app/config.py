@@ -91,6 +91,17 @@ class Settings(BaseSettings):
     def is_production(self) -> bool:
         return self.APP_ENV == "production"
 
+    @property
+    def public_base_url(self) -> str:
+        if self.PUBLIC_BASE_URL and "yourdomain.com" not in self.PUBLIC_BASE_URL:
+            return self.PUBLIC_BASE_URL.rstrip("/")
+        if self.BOT_WEBHOOK_URL:
+            from urllib.parse import urlparse
+            p = urlparse(self.BOT_WEBHOOK_URL)
+            if p.netloc:
+                return f"{p.scheme or 'https'}://{p.netloc}"
+        return self.PUBLIC_BASE_URL.rstrip("/")
+
     def validate_for_production(self) -> None:
         """Fail fast instead of silently running with insecure defaults."""
         if not self.is_production:

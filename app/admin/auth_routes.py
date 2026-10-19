@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.admin.security import create_session_token, verify_password
+from app.admin.security import create_session_token, read_session_token, verify_password
 from app.admin.templates import templates
 from app.config import get_settings
 from app.db.session import get_session
@@ -42,19 +42,66 @@ async def login_submit(
 
     token = create_session_token(admin.id)
     response = RedirectResponse(url="/admin/dashboard", status_code=302)
+    is_secure = request.url.scheme == "https" or settings.is_production
     response.set_cookie(
         key=settings.ADMIN_SESSION_COOKIE_NAME,
         value=token,
         max_age=settings.ADMIN_SESSION_TTL_SECONDS,
         httponly=True,
-        samesite="lax",
-        secure=settings.is_production,
+        samesite="none" if is_secure else "lax",
+        secure=is_secure,
+    )
+    return response
+
+
+@router.get("/auth/telegram")
+async def telegram_auth(
+    request: Request,
+    token: str,
+    session: AsyncSession = Depends(get_session),
+):
+    """Seamless one-click login for Telegram admins via Mini App or direct link."""
+    admin_id = read_session_token(token, max_age=900)
+    if admin_id is None:
+        return templates.TemplateResponse(
+            "login.html",
+            {"request": request, "error": "Avtorizatsiya havolasi muddati o'tgan yoki yaroqsiz."},
+            status_code=401,
+        )
+
+    uow = UnitOfWork(session)
+    admin = await uow.admins.get_by_id(admin_id)
+    if admin is None or not admin.is_active:
+        return templates.TemplateResponse(
+            "login.html",
+            {"request": request, "error": "Admin hisobi topilmadi yoki faol emas."},
+            status_code=401,
+        )
+
+    await uow.admins.touch_login(admin)
+    await session.commit()
+
+    session_token = create_session_token(admin.id)
+    response = RedirectResponse(url="/admin/dashboard", status_code=302)
+    is_secure = request.url.scheme == "https" or settings.is_production
+    response.set_cookie(
+        key=settings.ADMIN_SESSION_COOKIE_NAME,
+        value=session_token,
+        max_age=settings.ADMIN_SESSION_TTL_SECONDS,
+        httponly=True,
+        samesite="none" if is_secure else "lax",
+        secure=is_secure,
     )
     return response
 
 
 @router.get("/logout")
-async def logout() -> RedirectResponse:
+async def logout(request: Request) -> RedirectResponse:
     response = RedirectResponse(url="/admin/login", status_code=302)
-    response.delete_cookie(settings.ADMIN_SESSION_COOKIE_NAME)
+    is_secure = request.url.scheme == "https" or settings.is_production
+    response.delete_cookie(
+        key=settings.ADMIN_SESSION_COOKIE_NAME,
+        samesite="none" if is_secure else "lax",
+        secure=is_secure,
+    )
     return response

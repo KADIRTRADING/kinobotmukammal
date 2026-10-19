@@ -137,3 +137,28 @@ class CatalogRepository:
             ChannelJoinRequest.telegram_id == telegram_id,
         )
         return (await self.session.execute(stmt)).scalar_one_or_none() is not None
+
+    async def delete(self, movie: Movie) -> None:
+        await self.session.delete(movie)
+        await self.session.flush()
+
+    async def list_all_movies(self, limit: int = 200, offset: int = 0) -> list[Movie]:
+        stmt = select(Movie).order_by(Movie.created_at.desc()).limit(limit).offset(offset)
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def delete_channel(self, channel: MandatoryChannel) -> None:
+        await self.session.delete(channel)
+        await self.session.flush()
+
+    async def count_movies(self) -> int:
+        from sqlalchemy import func
+
+        result = await self.session.execute(select(func.count(Movie.id)))
+        return int(result.scalar_one())
+
+    async def count_channels(self) -> int:
+        from sqlalchemy import func
+
+        result = await self.session.execute(select(func.count(MandatoryChannel.id)))
+        return int(result.scalar_one())
